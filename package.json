@@ -1,0 +1,6 @@
+{
+  "name": "on-the-rocks-site",
+  "private": true,
+  "description": "On The Rocks website with Razorpay payments and email + WhatsApp order alerts",
+  "engines": { "node": ">=18" }
+}
