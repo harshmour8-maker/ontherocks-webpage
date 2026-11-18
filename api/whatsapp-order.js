@@ -15,10 +15,12 @@ module.exports = handler(async body => {
   ];
 
   await notifyOwner({
-    subject: `🟡 New WhatsApp order ${ref} – ${rupees(total)} (unpaid)`,
+    tag: 'ORDER',
+    subject: `New WhatsApp order ${ref} – ${rupees(total)} (NOT PAID)`,
     text: rows.map(([k, v]) => `${k}: ${v}`).join('\n'),
     html: emailHtml(`WhatsApp order ${ref}`, rows),
     replyTo: c.email || undefined,
+    tag: 'ORDER',
   });
 
   return { ok: true, ref };

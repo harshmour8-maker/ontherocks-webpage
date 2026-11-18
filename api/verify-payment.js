@@ -24,10 +24,12 @@ module.exports = handler(async body => {
   const text = rows.map(([k, v]) => `${k}: ${v}`).join('\n');
 
   await notifyOwner({
-    subject: `✅ New PAID order ${ref} – ${amount}`,
+    tag: 'ORDER',
+    subject: `New paid order ${ref} – ${amount}`,
     text,
     html: emailHtml(`Paid order ${ref}`, rows),
     replyTo: n.email && n.email !== '-' ? n.email : undefined,
+    tag: 'ORDER',
   });
 
   if (n.email && n.email !== '-') {
@@ -38,7 +40,8 @@ module.exports = handler(async body => {
       `Hi ${n.name},\n\nThanks for your order! We've received your payment.\n\n` +
         cRows.map(([k, v]) => `${k}: ${v}`).join('\n') +
         `\n\nWe'll confirm your delivery time on WhatsApp shortly.\n\n– On The Rocks`,
-      emailHtml('Order confirmed', cRows, `Hi ${n.name}, thanks for your order! We'll confirm your delivery time on WhatsApp shortly.`)
+      emailHtml('Order confirmed', cRows, `Hi ${n.name}, thanks for your order! We'll confirm your delivery time on WhatsApp shortly.`),
+      'ORDER'
     );
   }
 

@@ -24,10 +24,12 @@ module.exports = handler(async b => {
   ];
 
   const delivered = await notifyOwner({
-    subject: `📦 Bulk enquiry ${ref} – ${e.company || e.name}, ${e.city}`,
+    tag: 'ENQUIRY',
+    subject: `Bulk enquiry ${ref} – ${e.company || e.name}, ${e.city}`,
     text: rows.map(([k, v]) => `${k}: ${v}`).join('\n'),
     html: emailHtml(`Bulk enquiry ${ref}`, rows),
     replyTo: e.email || undefined,
+    tag: 'ENQUIRY',
   });
   if (!delivered) {
     // Nothing reached you, so tell the visitor rather than silently losing the lead.
@@ -41,7 +43,8 @@ module.exports = handler(async b => {
       `Hi ${e.name},\n\nThanks for reaching out about ${e.product || 'bulk ice'} (${e.quantity}). ` +
         `Our team will get back to you shortly with a quote.\n\nReference: ${ref}\n\n– On The Rocks`,
       emailHtml('Enquiry received', [['Reference', ref], ['Product', e.product || 'Bulk ice'], ['Quantity', e.quantity], ['City', e.city]],
-        `Hi ${e.name}, thanks for reaching out! Our team will get back to you shortly with a quote.`)
+        `Hi ${e.name}, thanks for reaching out! Our team will get back to you shortly with a quote.`),
+      'ENQUIRY'
     );
   }
 

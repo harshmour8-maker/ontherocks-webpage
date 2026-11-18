@@ -94,7 +94,7 @@ function validSignature(orderId, paymentId, signature) {
 // ---------------------------------------------------------------------------
 
 // Email via Resend (https://resend.com) — a plain HTTPS call, no packages.
-async function sendEmail({ to, subject, text, html, replyTo }) {
+async function sendEmail({ to, subject, text, html, replyTo, tag }) {
   const key = env('RESEND_API_KEY');
   const list = (Array.isArray(to) ? to : String(to || '').split(',')).map(s => s.trim()).filter(Boolean);
   if (!key || !list.length) return { skipped: true };
@@ -105,78 +105,32 @@ async function sendEmail({ to, subject, text, html, replyTo }) {
       from: env('MAIL_FROM', 'On The Rocks <onboarding@resend.dev>'),
       to: list, subject, text, html,
       ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(tag ? { tags: [{ name: 'category', value: tag.toLowerCase() }] } : {}),
     }),
   });
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text()}`);
   return { ok: true };
 }
 
-// WhatsApp alert to the owner. Two options (set WA_PROVIDER):
-//   callmebot – free, 2-minute setup, good for alerts to your own number.
-//   cloud     – official Meta WhatsApp Cloud API using an approved template.
-async function sendWhatsApp(text) {
-  const provider = env('WA_PROVIDER', 'callmebot').toLowerCase();
-
-  if (provider === 'callmebot') {
-    // CALLMEBOT_PHONE and CALLMEBOT_APIKEY can be comma-separated lists (same order) to alert several people.
-    const phones = env('CALLMEBOT_PHONE').split(',').map(s => s.trim()).filter(Boolean);
-    const keys = env('CALLMEBOT_APIKEY').split(',').map(s => s.trim()).filter(Boolean);
-    if (!phones.length || phones.length !== keys.length) return { skipped: true };
-    for (let i = 0; i < phones.length; i++) {
-      const url = 'https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(phones[i]) +
-        '&text=' + encodeURIComponent(text.slice(0, 1500)) + '&apikey=' + encodeURIComponent(keys[i]);
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(`CallMeBot ${r.status}: ${(await r.text()).slice(0, 200)}`);
-    }
-    return { ok: true };
+// Alert the business by email. Returns 1 if the email was sent, 0 if not.
+// tag ('ORDER' or 'ENQUIRY') is put at the start of the subject, e.g. "[ORDER] ...", so your
+// inbox can filter/label them automatically. It is also sent to Resend as a tag.
+// (WhatsApp alerts were removed at the owner's request.)
+async function notifyOwner({ subject, text, html, replyTo, tag }) {
+  if (tag) subject = `[${tag}] ${subject}`;
+  try {
+    const r = await sendEmail({ to: env('NOTIFY_EMAIL'), subject, text, html, replyTo, tag });
+    if (r && r.ok) return 1;
+    console.warn('[notify:email] not configured — skipped (check RESEND_API_KEY and NOTIFY_EMAIL)');
+  } catch (e) {
+    console.error('[notify:email]', e.message);
   }
-
-  if (provider === 'cloud') {
-    const token = env('WA_TOKEN'), phoneId = env('WA_PHONE_NUMBER_ID');
-    const recipients = env('WA_NOTIFY_TO').split(',').map(s => s.trim()).filter(Boolean);
-    if (!token || !phoneId || !recipients.length) return { skipped: true };
-    // Template variables cannot contain new lines, so the alert is flattened with " | ".
-    const param = text.replace(/\s*\n+\s*/g, ' | ').replace(/ {4,}/g, '   ').slice(0, 1000);
-    for (const to of recipients) {
-      const r = await fetch(`https://graph.facebook.com/${env('WA_API_VERSION', 'v23.0')}/${phoneId}/messages`, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp', to, type: 'template',
-          template: {
-            name: env('WA_TEMPLATE', 'owner_alert'),
-            language: { code: env('WA_TEMPLATE_LANG', 'en') },
-            components: [{ type: 'body', parameters: [{ type: 'text', text: param }] }],
-          },
-        }),
-      });
-      if (!r.ok) throw new Error(`WhatsApp Cloud API ${r.status}: ${(await r.text()).slice(0, 300)}`);
-    }
-    return { ok: true };
-  }
-
-  return { skipped: true };
+  return 0;
 }
 
-// Alert the business on every configured channel. Returns how many channels delivered.
-async function notifyOwner({ subject, text, html, replyTo }) {
-  const results = await Promise.allSettled([
-    sendEmail({ to: env('NOTIFY_EMAIL'), subject, text, html, replyTo }),
-    sendWhatsApp(subject + '\n\n' + text),
-  ]);
-  let delivered = 0;
-  results.forEach((r, i) => {
-    const ch = i ? 'whatsapp' : 'email';
-    if (r.status === 'rejected') console.error(`[notify:${ch}]`, r.reason && r.reason.message);
-    else if (r.value && r.value.ok) delivered++;
-    else console.warn(`[notify:${ch}] not configured — skipped`);
-  });
-  return delivered;
-}
-
-async function emailCustomer(to, subject, text, html) {
+async function emailCustomer(to, subject, text, html, tag) {
   if (!to) return;
-  try { await sendEmail({ to, subject, text, html, replyTo: env('REPLY_TO_EMAIL') || undefined }); }
+  try { await sendEmail({ to, subject, text, html, tag, replyTo: env('REPLY_TO_EMAIL') || undefined }); }
   catch (e) { console.error('[notify:customer-email]', e.message); }
 }
 
@@ -224,5 +178,5 @@ const istNow = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 module.exports = {
   CATALOG, env, HttpError, clean, cleanMultiline, esc, rupees, PHONE_RE, EMAIL_RE,
   priceCart, checkCustomer, razorpay, validSignature,
-  sendEmail, sendWhatsApp, notifyOwner, emailCustomer, emailHtml, handler, istNow,
+  sendEmail, notifyOwner, emailCustomer, emailHtml, handler, istNow,
 };
