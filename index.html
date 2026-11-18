@@ -126,6 +126,120 @@ body.open #cart{transform:none}body.open #shade{display:block}
 .done{padding:36px 0;display:grid;gap:12px}.done h3{font-size:30px}.done p{font-weight:500}
 .btn.busy{opacity:.5;pointer-events:none}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* ================= ANIMATION + MOBILE LAYER (v2) ================= */
+@keyframes otrUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes otrFade{from{opacity:0}to{opacity:1}}
+@keyframes otrFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-12px) rotate(-1deg)}}
+@keyframes otrPop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes otrShine{from{transform:translateX(-120%) skewX(-20deg)}to{transform:translateX(320%) skewX(-20deg)}}
+@keyframes otrMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* hero entrance */
+#hero h1{animation:otrUp .9s cubic-bezier(.2,.7,.2,1) .1s both}
+#hero p.sub{animation:otrUp .9s cubic-bezier(.2,.7,.2,1) .3s both}
+#hero .acts{animation:otrUp .9s cubic-bezier(.2,.7,.2,1) .45s both}
+#hero .pack{animation:otrFade 1s ease .2s both,otrFloat 6s ease-in-out 1.3s infinite}
+.strip .qc a{animation:otrUp .6s cubic-bezier(.2,.7,.2,1) both}
+.strip .qc a:nth-child(1){animation-delay:.6s}.strip .qc a:nth-child(2){animation-delay:.7s}.strip .qc a:nth-child(3){animation-delay:.8s}
+/* scroll reveal (only applied when JS runs) */
+.js .rv{opacity:0;transform:translateY(36px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.js .rv.in{opacity:1;transform:none}
+.js .rv-img{opacity:0;transform:scale(1.06);transition:opacity 1.1s ease,transform 1.4s cubic-bezier(.2,.7,.2,1)}
+.js .rv-img.in{opacity:1;transform:none}
+.js .rv-fade{opacity:0;transition:opacity 1s ease;transition-delay:var(--d,0s)}
+.js .rv-fade.in{opacity:1}
+/* nav on scroll */
+nav{transition:box-shadow .3s,background .3s}
+nav.scrolled{box-shadow:0 6px 24px rgba(0,0,0,.08)}
+nav .logo{transition:height .3s}
+nav.scrolled .logo{height:40px}
+/* buttons + cards */
+.btn{transition:background .2s,color .2s,transform .15s}
+.btn:active,#cartBtn:active{transform:scale(.96)}
+.btn.o{position:relative;overflow:hidden}
+#hero .btn:not(.o){position:relative;overflow:hidden}
+#hero .btn:not(.o)::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:otrShine 3.5s ease-in-out 2s infinite}
+.card{transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.card .im img{transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+.card:hover .im img{transform:scale(1.07)}
+.hp .pic img{transition:transform .8s cubic-bezier(.2,.7,.2,1)}
+.hp:hover .pic img{transform:scale(1.04) rotate(-1deg)}
+.who span{transition:background .2s,color .2s}
+.who span:hover{background:var(--k);color:var(--w)}
+.claims div{transition:background .3s,color .3s}
+.claims div:hover{background:var(--k);color:var(--w)}
+#cartBtn.pop{animation:otrPop .45s ease}
+.btn.added{background:#fff;color:#000}
+/* toast */
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:#000;color:#fff;font:700 13px var(--f);letter-spacing:.04em;text-transform:uppercase;padding:14px 20px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;border:2px solid #fff;white-space:nowrap}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+/* mobile sticky cart bar */
+#mbar{display:none}
+/* ---------------- phones ---------------- */
+@media(max-width:700px){
+  section{padding:64px 0}
+  .wrap{padding:0 18px}
+  .head{margin-bottom:28px}
+  nav .wrap{height:62px}
+  nav.scrolled .logo{height:32px}
+  html{scroll-padding-top:calc(62px + env(safe-area-inset-top,0px))}
+  #hero{padding-top:calc(62px + env(safe-area-inset-top,0px) + 20px)}
+  #hero .wrap{gap:18px}
+  #hero .pack{max-height:min(46vh,360px)}
+  #hero p.sub{margin:16px 0 22px}
+  #hero .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #hero .acts .btn{text-align:center;padding:16px 10px}
+  .strip{margin-top:32px}
+  .strip .wrap{justify-content:center;text-align:center;flex-direction:column;gap:12px}
+  .claims div{padding:26px 18px;font-size:19px}
+  .pour h2{padding:40px 0 0}
+  .pour img{max-height:420px}
+  .hp .pic{padding:18px}.hp .pic img{max-height:300px}
+  .hp .info{gap:14px}
+  .hp .row{display:grid;grid-template-columns:auto 1fr;gap:10px}
+  .hp .row .btn{text-align:center}
+  /* artisanal: 2 columns */
+  .grid{grid-template-columns:1fr 1fr}
+  .card .b{padding:14px 12px 16px;gap:6px}
+  .card h3{font-size:16px}
+  .card .sz{font-size:12px}
+  .card .foot{flex-direction:column;align-items:stretch;gap:10px;padding-top:6px}
+  .card .price{font-size:20px}
+  .card .btn{width:100%;text-align:center;padding:12px 8px}
+  .grid .card:last-child:nth-child(odd){grid-column:1/-1}
+  .grid .card:last-child:nth-child(odd) .im{aspect-ratio:16/9}
+  .grid .card:last-child:nth-child(odd) .foot{flex-direction:row;align-items:center}
+  .grid .card:last-child:nth-child(odd) .btn{width:auto;padding:12px 18px}
+  .who{gap:8px;margin:22px 0}.who span{padding:10px 14px;font-size:12px}
+  #enq{gap:10px}
+  #enq .row{display:grid;grid-template-columns:1fr;gap:10px}
+  #enq .row .btn{text-align:center;width:100%}
+  footer{padding:48px 0 calc(28px + env(safe-area-inset-bottom,0px))}
+  footer .logo{height:70px}
+  footer .cols{gap:24px}
+  /* 16px inputs stop iPhone from zooming in */
+  #co input,#co select,#co textarea,#enq input,#enq select,#enq textarea{font-size:16px}
+  /* cart drawer scrolls as one piece on short screens */
+  #cart{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #items{flex:none;overflow:visible}
+  #co{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+  /* sticky bottom bar */
+  #mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:55;background:#000;color:#fff;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));gap:12px;align-items:center;justify-content:space-between;transform:translateY(110%);transition:transform .35s cubic-bezier(.2,.7,.2,1);border-top:2px solid #fff}
+  body.hasbar #mbar{transform:none}
+  body.open #mbar{transform:translateY(110%)}
+  body.hasbar footer{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  #mbar b{font:900 18px var(--f)}
+  #mbar small{display:block;font:600 11px var(--f);letter-spacing:.06em;text-transform:uppercase;color:#aaa}
+  #mbar button{font:800 13px var(--f);letter-spacing:.06em;text-transform:uppercase;background:#fff;color:#000;border:0;padding:14px 20px;cursor:pointer}
+  body.hasbar #toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:360px){nav ul li:not(:last-child){display:none}}
+@media(prefers-reduced-motion:reduce){
+  #hero h1,#hero p.sub,#hero .acts,#hero .pack,.strip .qc a,#cartBtn.pop{animation:none!important}
+  #hero .btn::after{display:none}
+  .js .rv,.js .rv-img,.js .rv-fade{opacity:1!important;transform:none!important}
+  .card:hover .im img,.hp:hover .pic img{transform:none}
+}
 </style>
 </head>
 <body>
@@ -210,6 +324,8 @@ body.open #cart{transform:none}body.open #shade{display:block}
   <div class="legal"><span>© 2026 On The Rocks™. All rights reserved.</span><span>Frostworks Corporation</span></div>
 </div></footer>
 
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="mbar"><div><small><span id="mbc">0</span> in cart</small><b id="mbt">₹0</b></div><button id="mbarBtn" type="button">View cart →</button></div>
 <div id="shade"></div>
 <aside id="cart" aria-label="Cart">
   <header><h2>Your cart</h2><button class="x" id="cx" aria-label="Close cart">×</button></header>
@@ -269,16 +385,16 @@ function save(){try{localStorage.setItem('otrcart',JSON.stringify(cart))}catch(e
 function render(){
   const ids=Object.keys(cart).filter(k=>cart[k]>0&&find(k));let t=0,c=0;
   $('#items').innerHTML=ids.length?ids.map(k=>{const x=find(k),q=cart[k];t+=x.p*q;c+=q;return `<div class="it"><div><b>${x.n}</b><small>${R(x.p)} each</small></div><div class="qty"><button data-c="${k}" data-d="-1" aria-label="Less">−</button><span>${q}</span><button data-c="${k}" data-d="1" aria-label="More">+</button></div></div>`}).join(''):'<p class="empty">Your cart is empty.</p>';
-  $('#tot').textContent=R(t);$('#cc').textContent=c;$('#place').disabled=$('#pay').disabled=!ids.length;$('#pay').textContent=ids.length?'Pay '+R(t)+' securely':'Pay online';save();
+  $('#tot').textContent=R(t);$('#cc').textContent=c;syncBar(c,t);$('#place').disabled=$('#pay').disabled=!ids.length;$('#pay').textContent=ids.length?'Pay '+R(t)+' securely':'Pay online';save();
 }
-function add(id,q){cart[id]=(cart[id]||0)+q;render();}
+function add(id,q){cart[id]=(cart[id]||0)+q;render();const cb=$('#cartBtn');cb.classList.remove('pop');void cb.offsetWidth;cb.classList.add('pop');}
 const open=o=>document.body.classList.toggle('open',o);
 let hq=1;
 document.addEventListener('click',e=>{
   const b=e.target.closest('button,a');if(!b)return;
   if(b.dataset.q){hq=Math.max(1,hq+ +b.dataset.q);$('#hq').textContent=hq}
   if(b.id==='addHero'){add(HERO.id,hq);hq=1;$('#hq').textContent=1;open(true)}
-  if(b.dataset.add){add(b.dataset.add,1);open(true)}
+  if(b.dataset.add){add(b.dataset.add,1);if(phone()){toast('Added '+find(b.dataset.add).n);b.classList.add('added');b.textContent='Added ✓';setTimeout(()=>{b.classList.remove('added');b.textContent='Add'},1400)}else open(true)}
   if(b.dataset.c){cart[b.dataset.c]=Math.max(0,cart[b.dataset.c]+ +b.dataset.d);render()}
   if(b.id==='cartBtn')open(true);
   if(b.id==='cx')open(false);
@@ -349,6 +465,24 @@ enq.onsubmit=async e=>{
   catch(x){enqMsg(x.message+' Please WhatsApp us instead.',1)}
   finally{$('#enqBtn').classList.remove('busy')}
 };
+/* ---------- animation + mobile helpers ---------- */
+function phone(){return matchMedia('(max-width:700px)').matches}
+function syncBar(c,t){const m=$('#mbc');if(!m)return;m.textContent=c+(c===1?' item':' items');$('#mbt').textContent=R(t);document.body.classList.toggle('hasbar',c>0)}
+let toastT;function toast(m){const el=$('#toast');el.textContent=m;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),1600)}
+$('#mbarBtn').onclick=()=>open(true);
+const navEl=document.querySelector('nav');
+const onScroll=()=>navEl.classList.toggle('scrolled',scrollY>20);addEventListener('scroll',onScroll,{passive:true});onScroll();
+(function(){
+  if(!('IntersectionObserver' in window))return;
+  document.documentElement.classList.add('js');
+  const groups=[['.claims div',.08],['.pour h2',0],['#store .head',0],['.hp',0],['#artisanal .head',0],['#grid .card .b',0],['#artisanal .note',0],['#bulk h2',0],['.who span',.05],['.cities',0],['#quote',0],['#enq > *:not(.trap)',.03],['footer .cols > div',.1]];
+  const els=[];
+  groups.forEach(([sel,step])=>document.querySelectorAll(sel).forEach((el,i)=>{el.classList.add('rv');el.style.setProperty('--d',Math.min(i*step,.6)+'s');els.push(el)}));
+  document.querySelectorAll('.pour img').forEach(el=>{el.classList.add('rv-img');els.push(el)});
+  document.querySelectorAll('#grid .card').forEach((c,i)=>{const d=((i%(phone()?2:4))*.08)+'s';c.querySelectorAll('.im,.b').forEach(el=>{el.style.setProperty('--d',d);el.classList.add(el.classList.contains('im')?'rv-fade':'rv');els.push(el)})});
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{rootMargin:'0px 0px -8% 0px',threshold:.08});
+  els.forEach(el=>io.observe(el));
+})();
 render();
 </script>
 </body>
