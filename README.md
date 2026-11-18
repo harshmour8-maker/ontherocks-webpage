@@ -6,9 +6,13 @@
 index.html              your website (same design, now with payments, enquiry form, store links)
 api/create-order.js     prices the cart on the server and creates a Razorpay order
 api/verify-payment.js   checks the payment is genuine, then alerts you and emails the customer
-api/whatsapp-order.js   alerts you when someone orders on WhatsApp instead of paying online
+api/whatsapp-order.js   emails you when someone orders on WhatsApp instead of paying online
 api/enquiry.js          bulk enquiry form: alerts you, sends an acknowledgement to the customer
-api/_lib.js             price list + email/WhatsApp/Razorpay helpers
+api/_lib.js             price list + email/Razorpay helpers
+api/_stock.js           reads/updates stock in your Google Sheet
+api/stock.js            GET /api/stock – the page uses it to show "Sold out" / "Only N left"
+stock/stock-sheet.csv   starter stock sheet to import into Google Sheets
+stock/stock-script.gs   script to paste into the sheet (Extensions → Apps Script)
 .env.example            every setting you need to fill in
 ```
 
@@ -18,9 +22,9 @@ No npm packages are needed.
 
 | Customer does | You get | Customer gets |
 |---|---|---|
-| Pays online | ✅ Email + WhatsApp: "New PAID order" with items, address, payment ID | Order confirmed screen + email receipt (if they gave an email) |
-| Orders on WhatsApp | 🟡 Email + WhatsApp: "WhatsApp order (unpaid)" + their WhatsApp chat opens to you | WhatsApp chat pre-filled with the order |
-| Sends bulk enquiry | 📦 Email + WhatsApp with all details (reply to the email to answer them) | "Enquiry received" email |
+| Pays online | Email: "[ORDER] New paid order" with items, address, payment ID | Order confirmed screen + email receipt (if they gave an email) |
+| Orders on WhatsApp | Email: "[ORDER] New WhatsApp order … (NOT PAID)" + their WhatsApp chat opens to you | WhatsApp chat pre-filled with the order |
+| Sends bulk enquiry | Email: "[ENQUIRY] Bulk enquiry …" with all details (reply to the email to answer them) | "Enquiry received" email |
 
 Every online order is also saved in your **Razorpay Dashboard → Orders**, with name, phone, address and items stored in the order's notes, so you have a record even if an alert fails.
 
@@ -42,18 +46,7 @@ Test payments: use UPI ID `success@razorpay`, or any test card from Razorpay's d
 3. Until the domain is verified, keep `MAIL_FROM=On The Rocks <onboarding@resend.dev>`. In that mode, Resend only delivers to the email you signed up with, so customer receipts won't go out yet.
 
 ### 3. WhatsApp alerts
-**Option A: CallMeBot (free, 2 minutes, recommended to start)**
-1. Go to **callmebot.com → WhatsApp API** and follow the steps there: save their number in your phone and send them the activation message from **the WhatsApp number that should receive alerts**.
-2. You'll get an API key back on WhatsApp. Put your number in `CALLMEBOT_PHONE` and the key in `CALLMEBOT_APIKEY`.
-3. To alert a second person, they repeat this and you comma-separate both values.
-
-CallMeBot is a free, unofficial service, fine for alerts to yourself. If you move to high volume, switch to Option B.
-
-**Option B: Official WhatsApp Cloud API (Meta)**
-1. Create a Meta Business account → developers.facebook.com → create an app → add WhatsApp.
-2. Create a **Utility** message template named `owner_alert` with body text `{{1}}` and get it approved.
-3. Generate a permanent token (System User) and note your Phone Number ID.
-4. Set `WA_PROVIDER=cloud` and fill in the `WA_…` values from `.env.example`.
+Removed. All alerts now come by email only, tagged [ORDER] or [ENQUIRY] in the subject.
 
 ### 4. Store logo links
 Open `index.html`, search for `STORES:` near the start of the `<script>` section, and paste your product page links:
@@ -93,3 +86,22 @@ The server always charges the `CATALOG` price, so nobody can change a price in t
 
 ## Before you take live payments
 Razorpay requires these pages on your site during activation: **Terms & Conditions, Privacy Policy, Refund/Cancellation Policy, Shipping/Delivery Policy, Contact Us**. Add them as simple pages and link them in the footer.
+
+---
+
+## Delivery location pin
+At checkout, customers can tap **Pin your delivery location on the map**, then tap **Use my location** or drag the map under the pin, and confirm. If the address box is empty it is filled in for them.
+Your [ORDER] email then has a **Map pin** line with a link that opens the exact spot in Google Maps.
+The map uses free OpenStreetMap tiles, so there's no API key and no billing. The pin is optional for customers.
+
+## Stock management (Google Sheet)
+You manage stock from a Google Sheet, on your phone or laptop. The website:
+- shows **Sold out** when the tick box is off or the quantity is 0, and **Only N left** when 10 or fewer are left,
+- stops anyone ordering more than what's left (checked again on the server before payment),
+- **reduces the quantity automatically after every paid order**, and writes it to a "Sales log" tab.
+WhatsApp (unpaid) orders don't reduce stock, so adjust those by hand when they're confirmed.
+
+Columns: **id** (don't change) · **name** · **in_stock** (tick box) · **quantity** (leave empty for "no limit").
+If the sheet isn't set up, or can't be reached, everything is treated as in stock, so the shop keeps selling.
+
+Setup steps are in the launch guide, Step 8.

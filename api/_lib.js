@@ -55,11 +55,22 @@ function checkCustomer(c) {
     city: clean(c.city, 80),
     address: clean(c.address, 250),
   };
+  // Optional map pin from the checkout map (decimal degrees). Kept only if it is inside India.
+  const lat = Number(c.lat), lng = Number(c.lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng) && lat > 5 && lat < 38 && lng > 67 && lng < 99) {
+    out.lat = Math.round(lat * 1e6) / 1e6;
+    out.lng = Math.round(lng * 1e6) / 1e6;
+  }
   if (!out.name || !PHONE_RE.test(out.phone) || !out.city || !out.address) {
     throw new HttpError(400, 'Add your name, a valid phone number, city and address.');
   }
   if (out.email && !EMAIL_RE.test(out.email)) out.email = '';
   return out;
+}
+
+// Google Maps link for a pinned location ("lat,lng"), or '' when there is none.
+function mapLink(latlng) {
+  return /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(String(latlng || '')) ? 'https://www.google.com/maps?q=' + latlng : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +149,7 @@ async function emailCustomer(to, subject, text, html, tag) {
 function emailHtml(title, rows, footer = '') {
   const tr = rows.map(([k, v]) =>
     `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:700;vertical-align:top;white-space:nowrap">${esc(k)}</td>` +
-    `<td style="padding:8px 12px;border-bottom:1px solid #eee;white-space:pre-line">${esc(v)}</td></tr>`).join('');
+    `<td style="padding:8px 12px;border-bottom:1px solid #eee;white-space:pre-line">${/^https:\/\/\S+$/.test(String(v)) ? `<a href="${esc(v)}" style="color:#000;font-weight:700">Open in Google Maps</a>` : esc(v)}</td></tr>`).join('');
   return `<div style="font-family:Montserrat,Helvetica,Arial,sans-serif;max-width:560px;margin:auto;border:2px solid #000">
   <div style="background:#000;color:#fff;padding:18px 20px;font-weight:900;font-size:20px;letter-spacing:.02em;text-transform:uppercase">${esc(title)}</div>
   <table style="width:100%;border-collapse:collapse;font-size:14px">${tr}</table>
@@ -177,6 +188,6 @@ const istNow = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 
 module.exports = {
   CATALOG, env, HttpError, clean, cleanMultiline, esc, rupees, PHONE_RE, EMAIL_RE,
-  priceCart, checkCustomer, razorpay, validSignature,
+  priceCart, checkCustomer, mapLink, razorpay, validSignature,
   sendEmail, notifyOwner, emailCustomer, emailHtml, handler, istNow,
 };

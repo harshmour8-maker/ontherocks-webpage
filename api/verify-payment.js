@@ -1,7 +1,8 @@
 // POST /api/verify-payment  { razorpay_order_id, razorpay_payment_id, razorpay_signature }
-// Confirms the payment is genuine (HMAC signature), then sends the "paid order" alerts.
-// Order details are read back from Razorpay, not from the browser.
-const { handler, HttpError, razorpay, validSignature, notifyOwner, emailCustomer, emailHtml, rupees, istNow } = require('./_lib');
+// Confirms the payment is genuine (HMAC signature), sends the [ORDER] email, emails the customer
+// a receipt and reduces stock. Order details are read back from Razorpay, not from the browser.
+const { handler, HttpError, razorpay, validSignature, notifyOwner, emailCustomer, emailHtml, rupees, istNow, mapLink } = require('./_lib');
+const { reduceStock, unpackCart } = require('./_stock');
 
 module.exports = handler(async body => {
   const orderId = String(body.razorpay_order_id || '');
@@ -15,22 +16,24 @@ module.exports = handler(async body => {
   const ref = order.receipt || orderId;
   const amount = rupees(order.amount / 100);
   const items = String(n.items || '').split('; ').join('\n');
+  const map = mapLink(n.location);
 
   const rows = [
     ['Order', ref], ['Status', `PAID ${amount} online`], ['Payment ID', paymentId],
     ['Items', items], ['Name', n.name], ['Phone', n.phone], ['Email', n.email],
-    ['City', n.city], ['Address', n.address], ['Time', istNow()],
+    ['City', n.city], ['Address', n.address], ['Map pin', map || 'Not pinned'], ['Time', istNow()],
   ];
-  const text = rows.map(([k, v]) => `${k}: ${v}`).join('\n');
 
-  await notifyOwner({
-    tag: 'ORDER',
-    subject: `New paid order ${ref} – ${amount}`,
-    text,
-    html: emailHtml(`Paid order ${ref}`, rows),
-    replyTo: n.email && n.email !== '-' ? n.email : undefined,
-    tag: 'ORDER',
-  });
+  await Promise.all([
+    notifyOwner({
+      tag: 'ORDER',
+      subject: `New paid order ${ref} – ${amount}`,
+      text: rows.map(([k, v]) => `${k}: ${v}`).join('\n'),
+      html: emailHtml(`Paid order ${ref}`, rows),
+      replyTo: n.email && n.email !== '-' ? n.email : undefined,
+    }),
+    reduceStock(ref, unpackCart(n.cart)),
+  ]);
 
   if (n.email && n.email !== '-') {
     const cRows = [['Order', ref], ['Paid', amount], ['Items', items], ['Deliver to', `${n.address}, ${n.city}`]];
