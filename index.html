@@ -485,5 +485,9 @@ const onScroll=()=>navEl.classList.toggle('scrolled',scrollY>20);addEventListene
 })();
 render();
 </script>
+<script type="module">
+  import { inject } from '@vercel/analytics';
+  inject();
+</script>
 </body>
 </html>
