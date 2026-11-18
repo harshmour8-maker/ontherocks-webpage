@@ -10,8 +10,8 @@ api/whatsapp-order.js   emails you when someone orders on WhatsApp instead of pa
 api/enquiry.js          bulk enquiry form: alerts you, sends an acknowledgement to the customer
 api/_lib.js             price list + email/Razorpay helpers
 api/_stock.js           reads/updates stock in your Google Sheet
+api/config.js           GET /api/config – gives the page your Google Maps key
 api/stock.js            GET /api/stock – the page uses it to show "Sold out" / "Only N left"
-stock/stock-sheet.csv   starter stock sheet to import into Google Sheets
 stock/stock-script.gs   script to paste into the sheet (Extensions → Apps Script)
 .env.example            every setting you need to fill in
 ```
@@ -89,10 +89,12 @@ Razorpay requires these pages on your site during activation: **Terms & Conditio
 
 ---
 
-## Delivery location pin
-At checkout, customers can tap **Pin your delivery location on the map**, then tap **Use my location** or drag the map under the pin, and confirm. If the address box is empty it is filled in for them.
-Your [ORDER] email then has a **Map pin** line with a link that opens the exact spot in Google Maps.
-The map uses free OpenStreetMap tiles, so there's no API key and no billing. The pin is optional for customers.
+## Delivery address from the map (required)
+At checkout the customer must pick their delivery spot on the map: search their area/building (Google search box), or tap **Use my location**, then drag the map so the pin is on their gate and tap **Confirm**. They then type their flat / house no. and a landmark.
+Payment and WhatsApp orders are blocked until a location is chosen (checked on the server too).
+Your [ORDER] email shows **Flat / landmark**, **Map address** and a **Map pin** link that opens in Google Maps.
+- With `GOOGLE_MAPS_KEY` set in Vercel → Google Maps + Google address search (setup: guide Step 9).
+- Without it, or if Google fails to load → a free OpenStreetMap backup map, so orders never get stuck.
 
 ## Stock management (Google Sheet)
 You manage stock from a Google Sheet, on your phone or laptop. The website:

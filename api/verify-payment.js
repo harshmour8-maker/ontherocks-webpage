@@ -21,7 +21,8 @@ module.exports = handler(async body => {
   const rows = [
     ['Order', ref], ['Status', `PAID ${amount} online`], ['Payment ID', paymentId],
     ['Items', items], ['Name', n.name], ['Phone', n.phone], ['Email', n.email],
-    ['City', n.city], ['Address', n.address], ['Map pin', map || 'Not pinned'], ['Time', istNow()],
+    ['Flat / landmark', n.address], ['Map address', n.map_address || '-'], ['City', n.city],
+    ['Map pin', map || 'Not pinned'], ['Time', istNow()],
   ];
 
   await Promise.all([
@@ -36,7 +37,7 @@ module.exports = handler(async body => {
   ]);
 
   if (n.email && n.email !== '-') {
-    const cRows = [['Order', ref], ['Paid', amount], ['Items', items], ['Deliver to', `${n.address}, ${n.city}`]];
+    const cRows = [['Order', ref], ['Paid', amount], ['Items', items], ['Deliver to', `${n.address}, ${n.map_address && n.map_address !== '-' ? n.map_address : n.city}`]];
     await emailCustomer(
       n.email,
       `Your On The Rocks order ${ref} is confirmed`,

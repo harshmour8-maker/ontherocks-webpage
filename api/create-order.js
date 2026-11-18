@@ -17,7 +17,7 @@ module.exports = handler(async body => {
     receipt: ref,
     notes: {
       name: c.name, phone: c.phone, email: c.email || '-', city: c.city,
-      address: c.address, items: lines.join('; ').slice(0, 255), total: String(total),
+      address: c.address, map_address: c.mapAddress || '-', items: lines.join('; ').slice(0, 255), total: String(total),
       cart: packCart(items),
       location: c.lat !== undefined ? `${c.lat},${c.lng}` : '-',
     },

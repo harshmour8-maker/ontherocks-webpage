@@ -15,7 +15,8 @@ module.exports = handler(async body => {
   const rows = [
     ['Order', ref], ['Status', `NOT PAID – ordered via WhatsApp (${rupees(total)})`],
     ['Items', lines.join('\n')], ['Name', c.name], ['Phone', c.phone], ['Email', c.email || '-'],
-    ['City', c.city], ['Address', c.address], ['Map pin', map || 'Not pinned'], ['Time', istNow()],
+    ['Flat / landmark', c.address], ['Map address', c.mapAddress || '-'], ['City', c.city],
+    ['Map pin', map || 'Not pinned'], ['Time', istNow()],
   ];
 
   await notifyOwner({

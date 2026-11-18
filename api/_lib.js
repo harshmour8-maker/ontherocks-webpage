@@ -53,7 +53,8 @@ function checkCustomer(c) {
     phone: clean(c.phone, 20),
     email: clean(c.email, 120),
     city: clean(c.city, 80),
-    address: clean(c.address, 250),
+    address: clean(c.address, 250),     // flat / house no., floor, landmark
+    mapAddress: clean(c.mapAddress, 250), // address of the pin chosen on the map
   };
   // Optional map pin from the checkout map (decimal degrees). Kept only if it is inside India.
   const lat = Number(c.lat), lng = Number(c.lng);
@@ -61,9 +62,13 @@ function checkCustomer(c) {
     out.lat = Math.round(lat * 1e6) / 1e6;
     out.lng = Math.round(lng * 1e6) / 1e6;
   }
-  if (!out.name || !PHONE_RE.test(out.phone) || !out.city || !out.address) {
-    throw new HttpError(400, 'Add your name, a valid phone number, city and address.');
+  // The delivery spot must be chosen on the map (set REQUIRE_MAP_PIN=no in Vercel to turn this off).
+  if (out.lat === undefined && env('REQUIRE_MAP_PIN', 'yes') !== 'no') {
+    throw new HttpError(400, 'Please select your delivery address on the map.');
   }
+  if (!out.address) throw new HttpError(400, 'Add your flat / house number and a landmark.');
+  if (!out.city) out.city = '-';
+  if (!out.name || !PHONE_RE.test(out.phone)) throw new HttpError(400, 'Add your name and a valid phone number.');
   if (out.email && !EMAIL_RE.test(out.email)) out.email = '';
   return out;
 }
