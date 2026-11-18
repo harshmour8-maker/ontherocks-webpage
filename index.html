@@ -247,16 +247,18 @@ nav.scrolled .logo{height:40px}
 .locbtn{font:700 14px var(--f);text-align:left;background:#f3f3f3;border:2px dashed #000;padding:12px 14px;cursor:pointer;display:grid;gap:2px;color:#000}
 .locbtn small{font-weight:500;font-size:12px;color:var(--g)}
 .locbtn:hover{background:#e9e9e9}
-#map{position:relative;height:260px;overflow:hidden;background:#dfe6e9;border:2px solid #000;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
-#map.drag{cursor:grabbing}
+.mapwrap{position:relative;height:300px;overflow:hidden;border:2px solid #000;background:#dfe6e9}
+#map{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#gmap{position:absolute;inset:0}
+.mapwrap.drag #map{cursor:grabbing}
 #tiles{position:absolute;inset:0}
 #tiles img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
-#map .pin{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-30px 0 0 -15px;pointer-events:none;transition:transform .2s cubic-bezier(.2,.7,.2,1);z-index:2}
-#map .pin::before{content:"";position:absolute;inset:0;background:#000;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 0 0 3px #fff}
-#map .pin::after{content:"";position:absolute;left:10px;top:9px;width:10px;height:10px;border-radius:50%;background:#fff}
-#map.drag .pin{transform:translateY(-10px)}
-#map .shadow{position:absolute;left:50%;top:50%;width:14px;height:6px;margin:-3px 0 0 -7px;border-radius:50%;background:rgba(0,0,0,.35);z-index:1;pointer-events:none;transition:transform .2s}
-#map.drag .shadow{transform:scale(.6)}
+.mapwrap .pin{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-30px 0 0 -15px;pointer-events:none;transition:transform .2s cubic-bezier(.2,.7,.2,1);z-index:2}
+.mapwrap .pin::before{content:"";position:absolute;inset:0;background:#000;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 0 0 3px #fff}
+.mapwrap .pin::after{content:"";position:absolute;left:10px;top:9px;width:10px;height:10px;border-radius:50%;background:#fff}
+.mapwrap.drag .pin{transform:translateY(-10px)}
+.mapwrap .shadow{position:absolute;left:50%;top:50%;width:14px;height:6px;margin:-3px 0 0 -7px;border-radius:50%;background:rgba(0,0,0,.35);z-index:1;pointer-events:none;transition:transform .2s}
+.mapwrap.drag .shadow{transform:scale(.6)}
 .mapctl{position:absolute;right:8px;top:8px;display:grid;gap:4px;z-index:3}
 .mapctl button,#locMe{font:800 18px var(--f);width:36px;height:36px;border:2px solid #000;background:#fff;cursor:pointer;color:#000}
 #locMe{position:absolute;left:8px;bottom:8px;width:auto;height:auto;padding:8px 12px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;z-index:3}
@@ -267,6 +269,21 @@ nav.scrolled .logo{height:40px}
 #locDone span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #locDone button{font:700 12px var(--f);text-transform:uppercase;letter-spacing:.04em;background:none;border:0;text-decoration:underline;cursor:pointer;color:#000}
 [hidden]{display:none!important}
+.loclabel{font:800 13px var(--f);letter-spacing:.06em;text-transform:uppercase;margin-top:4px}
+.loclabel em{font-style:normal;color:#b00020}
+#gsearch gmp-place-autocomplete{width:100%;border:2px solid #000;color-scheme:light}
+#locDone{align-items:flex-start}
+#locDone span{white-space:normal;font-weight:600;line-height:1.35}
+.osearch{position:relative}
+#co #oq{font:500 16px var(--f);padding:12px 12px 12px 38px;border:2px solid #000;width:100%;border-radius:0;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%23000' stroke-width='2.4'%3E%3Ccircle cx='7.5' cy='7.5' r='5.5'/%3E%3Cpath d='M12 12l5 5'/%3E%3C/svg%3E") no-repeat 12px 50%;-webkit-appearance:none;appearance:none}
+#ores{position:absolute;left:0;right:0;top:100%;background:#fff;border:2px solid #000;border-top:0;z-index:6;list-style:none;max-height:280px;overflow:auto;box-shadow:0 10px 24px rgba(0,0,0,.15)}
+#ores li{padding:10px 12px;cursor:pointer;border-bottom:1px solid #eee;font-size:14px;line-height:1.3}
+#ores li:last-child{border-bottom:0}
+#ores li b{display:block;font-weight:700}
+#ores li small{color:var(--g);font-weight:500}
+#ores li:hover,#ores li.on{background:#f1f1f1}
+#ores li.msg{cursor:default;color:var(--g)}
+.locbtn.need{border-color:#b00020;background:#fff3f3}
 #cart{overflow-y:auto;-webkit-overflow-scrolling:touch}
 #items{flex:none;overflow:visible;min-height:90px}
 #co{margin-top:auto}
@@ -304,7 +321,7 @@ nav{animation:otrNavIn .7s cubic-bezier(.2,.7,.2,1) both}
 .card{will-change:transform}
 .it{animation:otrItemIn .4s cubic-bezier(.2,.7,.2,1) both}
 .flyer{position:fixed;z-index:90;pointer-events:none;object-fit:cover;border:2px solid #000;background:#fff}
-@media(max-width:700px){#map{height:240px}.ice i:nth-child(n+5){display:none}.band{padding:14px 0}}
+@media(max-width:700px){.mapwrap{height:280px}.ice i:nth-child(n+5){display:none}.band{padding:14px 0}}
 @media(prefers-reduced-motion:reduce){
   nav,#hero h1 .ln>span,.ice i,.band .track,.it{animation:none!important}
   .js h2.mask .ln>span{transform:none!important;transition:none!important}
@@ -408,22 +425,29 @@ nav{animation:otrNavIn .7s cubic-bezier(.2,.7,.2,1) both}
     <input id="nm" placeholder="Name" autocomplete="name">
     <input id="ph" placeholder="Phone" type="tel" autocomplete="tel">
     <input id="em" placeholder="Email (for your receipt)" type="email" autocomplete="email">
-    <input id="ct" placeholder="City and state" autocomplete="address-level2">
-    <textarea id="ad" rows="2" placeholder="Delivery address" autocomplete="street-address"></textarea>
+    <input id="ct" type="hidden">
+    <div class="loclabel">Delivery location <em>*</em></div>
     <div id="loc">
-      <button type="button" class="locbtn" id="locOpen">📍 Pin your delivery location on the map<small>Recommended: helps us find you faster</small></button>
+      <button type="button" class="locbtn" id="locOpen">📍 Select your delivery address on the map<small>Required: search your area or use your current location</small></button>
       <div id="locPanel" hidden>
-        <div id="map" role="application" aria-label="Map. Drag the map to put the pin on your delivery spot.">
-          <div id="tiles"></div><div class="shadow"></div><div class="pin"></div>
-          <div class="mapctl"><button type="button" data-zoom="1" aria-label="Zoom in">+</button><button type="button" data-zoom="-1" aria-label="Zoom out">−</button></div>
+        <div id="gsearch" hidden></div>
+        <div class="osearch" id="osearch" hidden><input id="oq" type="search" placeholder="Search your area, building or street" autocomplete="off" enterkeyhint="search" aria-label="Search for your delivery address"><ul id="ores" hidden role="listbox"></ul></div>
+        <div class="mapwrap" id="mapwrap">
+          <div id="map" role="application" aria-label="Map. Drag the map to put the pin on your delivery spot.">
+            <div id="tiles"></div>
+            <div class="mapctl"><button type="button" data-zoom="1" aria-label="Zoom in">+</button><button type="button" data-zoom="-1" aria-label="Zoom out">−</button></div>
+            <div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
+          </div>
+          <div id="gmap" hidden></div>
+          <div class="shadow"></div><div class="pin"></div>
           <button type="button" id="locMe">◎ Use my location</button>
-          <div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
         </div>
         <p class="maphint" id="locHint">Drag the map so the pin sits exactly on your gate or building.</p>
         <button type="button" class="btn" id="locOk">Confirm this location</button>
       </div>
       <div id="locDone" hidden>📍 <span id="locTxt">Location pinned</span><button type="button" id="locEdit">Change</button></div>
     </div>
+    <textarea id="ad" rows="2" placeholder="Flat / house no., floor, landmark *" autocomplete="address-line2"></textarea>
     <div id="err" role="alert"></div>
     <button class="btn" id="pay" type="button">Pay online</button>
     <button class="btn o" id="place" type="button">Order on WhatsApp instead</button>
@@ -492,10 +516,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')open(false)});
 const err=m=>{$('#err').textContent=m};
 const lineItems=()=>Object.keys(cart).filter(k=>cart[k]>0&&find(k)).map(k=>({id:k,qty:cart[k]}));
 function customer(){
-  const c={name:$('#nm').value.trim(),phone:$('#ph').value.trim(),email:$('#em').value.trim(),city:$('#ct').value.trim(),address:$('#ad').value.trim()};
-  if(!c.name||!/^[+\d\s-]{10,15}$/.test(c.phone)||!c.address||!c.city){err('Add your name, a valid phone number, city and address.');return null}
+  const c={name:$('#nm').value.trim(),phone:$('#ph').value.trim(),email:$('#em').value.trim(),address:$('#ad').value.trim()};
+  if(!c.name||!/^[+\d\s-]{10,15}$/.test(c.phone)){err('Add your name and a valid phone number.');return null}
+  if(!PIN){err('Please select your delivery address on the map.');$('#locOpen').classList.add('need');if(!$('#locOpen').hidden)$('#locOpen').scrollIntoView({block:'center',behavior:'smooth'});return null}
+  if(!c.address){err('Add your flat / house number and a landmark.');$('#ad').focus();return null}
   if(c.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)){err("That email address doesn't look right.");return null}
-  if(PIN){c.lat=PIN.lat;c.lng=PIN.lng}
+  c.lat=PIN.lat;c.lng=PIN.lng;c.mapAddress=PIN.address;c.city=PIN.city||'-';
   err('');return c;
 }
 async function api(path,body){
@@ -539,7 +565,7 @@ $('#place').onclick=()=>{
   const items=lineItems();let t=0;
   const ls=items.map(({id,qty})=>{const x=find(id);t+=x.p*qty;return `${qty} x ${x.n} (${R(x.p*qty)})`});
   fetch(CFG.API+'/api/whatsapp-order',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({items,customer:c})}).catch(()=>{});
-  window.open(wa(`New order\n${ls.join('\n')}\nTotal: ${R(t)}\n\nName: ${c.name}\nPhone: ${c.phone}\nCity: ${c.city}\nAddress: ${c.address}${PIN?`\nMap: https://www.google.com/maps?q=${PIN.lat},${PIN.lng}`:''}`),'_blank');
+  window.open(wa(`New order\n${ls.join('\n')}\nTotal: ${R(t)}\n\nName: ${c.name}\nPhone: ${c.phone}\nFlat / landmark: ${c.address}\nAddress: ${c.mapAddress}\nMap: https://www.google.com/maps?q=${PIN.lat},${PIN.lng}`),'_blank');
 };
 /* Bulk enquiry form */
 const enq=$('#enq'),enqMsg=(m,bad)=>{$('#enqMsg').textContent=m;$('#enqMsg').classList.toggle('bad',!!bad)};
@@ -627,12 +653,12 @@ const MAP=(function(){
     const f=Math.pow(2,nz-z),ax=cx-w/2+px,ay=cy-h/2+py; // keep the point under the finger/cursor still
     cx=ax*f-(px-w/2);cy=ay*f-(py-h/2);z=nz;moved=true;draw();
   }
-  el.addEventListener('pointerdown',e=>{if(e.target.closest('button,a'))return;el.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});el.classList.add('drag');if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y)}});
+  el.addEventListener('pointerdown',e=>{if(e.target.closest('button,a'))return;el.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});el.parentElement.classList.add('drag');if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y)}});
   el.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;
     if(ptrs.size===1){cx-=e.clientX-p.x;cy-=e.clientY-p.y;moved=true;draw()}
     p.x=e.clientX;p.y=e.clientY;
     if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(d/pinch>1.35){zoom(1);pinch=d}else if(d/pinch<.74){zoom(-1);pinch=d}}});
-  const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size)el.classList.remove('drag')};
+  const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!ptrs.size)el.parentElement.classList.remove('drag')};
   el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
   let wl=0;el.addEventListener('wheel',e=>{e.preventDefault();const now=Date.now();if(now-wl<250)return;wl=now;const r=el.getBoundingClientRect();zoom(e.deltaY<0?1:-1,e.clientX-r.left,e.clientY-r.top)},{passive:false});
   el.addEventListener('dblclick',e=>{const r=el.getBoundingClientRect();zoom(1,e.clientX-r.left,e.clientY-r.top)});
@@ -641,32 +667,131 @@ const MAP=(function(){
   return{set,draw,center,touched:()=>moved};
 })();
 const DEFAULT_CENTER={lat:26.1445,lng:91.7362}; // Guwahati
-function shortAddr(a){return a.split(',').slice(0,3).join(',').trim()}
-async function placeName(p){
-  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${p.lat}&lon=${p.lng}`,{headers:{'Accept-Language':'en'}});return r.ok?await r.json():null}catch(e){return null}
+/* Google Maps key comes from Vercel (GOOGLE_MAPS_KEY) via /api/config. No key → free backup map. */
+const CONFIG=fetch(CFG.API+'/api/config').then(r=>r.ok?r.json():{}).catch(()=>({}));
+const LOC={engine:null};let GM=null;
+const hint=t=>{$('#locHint').textContent=t};
+function placeName(p){return fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat=${p.lat}&lon=${p.lng}`,{headers:{'Accept-Language':'en'}}).then(r=>r.ok?r.json():null).catch(()=>null)}
+function cityFrom(comps){ // works for both Places (longText) and Geocoder (long_name) results
+  const get=t=>{const c=(comps||[]).find(x=>(x.types||[]).includes(t));return c?(c.longText||c.long_name||''):''};
+  const city=get('locality')||get('administrative_area_level_3')||get('administrative_area_level_2'),state=get('administrative_area_level_1');
+  return [city,state].filter(Boolean).join(', ');
 }
-$('#locOpen').onclick=()=>{
-  $('#locOpen').hidden=true;$('#locPanel').hidden=false;$('#locDone').hidden=true;
-  const c=PIN||DEFAULT_CENTER;MAP.set(c.lat,c.lng,PIN?17:12);
-  if(!PIN&&navigator.geolocation)$('#locHint').textContent='Tap "Use my location", or drag the map so the pin sits on your gate or building.';
-};
-$('#locEdit').onclick=$('#locOpen').onclick;
+function loadGoogle(key){
+  return new Promise((res,rej)=>{
+    if(window.google&&google.maps&&google.maps.importLibrary)return res();
+    window.otrGmReady=res;
+    window.gm_authFailure=()=>{console.warn('Google Maps key was rejected – switching to the backup map.');useBackupMap()};
+    const s=document.createElement('script');
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&region=IN&language=en&callback=otrGmReady`;
+    s.async=true;s.onerror=()=>rej(new Error('script failed to load'));document.head.appendChild(s);
+    setTimeout(()=>rej(new Error('timed out')),12000);
+  });
+}
+async function useGoogleMap(c,key){
+  await loadGoogle(key);
+  const [{Map},{PlaceAutocompleteElement},{Geocoder}]=await Promise.all([google.maps.importLibrary('maps'),google.maps.importLibrary('places'),google.maps.importLibrary('geocoding')]);
+  if(!GM){
+    $('#map').hidden=true;$('#gmap').hidden=false;$('#gsearch').hidden=false;$('#osearch').hidden=true;
+    const map=new Map($('#gmap'),{center:c,zoom:PIN?18:12,disableDefaultUI:true,zoomControl:true,gestureHandling:'greedy',clickableIcons:false});
+    const pac=new PlaceAutocompleteElement({includedRegionCodes:['in']});
+    pac.placeholder='Search your area, building or street';
+    $('#gsearch').appendChild(pac);
+    pac.addEventListener('gmp-select',async({placePrediction})=>{
+      const place=placePrediction.toPlace();
+      await place.fetchFields({fields:['formattedAddress','location','addressComponents']});
+      if(!place.location)return;
+      map.setCenter(place.location);map.setZoom(18);
+      GM.last={lat:place.location.lat(),lng:place.location.lng(),address:place.formattedAddress,city:cityFrom(place.addressComponents)};
+      hint('Now drag the map so the pin sits exactly on your gate or building, then confirm.');
+    });
+    map.addListener('dragstart',()=>$('#mapwrap').classList.add('drag'));
+    map.addListener('dragend',()=>$('#mapwrap').classList.remove('drag'));
+    GM={map,geocoder:new Geocoder(),last:null};
+  }else{GM.map.setCenter(c);if(PIN)GM.map.setZoom(18)}
+  LOC.engine='google';
+  hint('Search your area above, or tap "Use my location". Then drag the map so the pin is on your gate.');
+}
+function useBackupMap(c){
+  LOC.engine='osm';$('#gmap').hidden=true;$('#gsearch').hidden=true;$('#map').hidden=false;$('#osearch').hidden=false;
+  c=c||PIN||DEFAULT_CENTER;MAP.set(c.lat,c.lng,PIN?17:12);
+  hint('Search your area above, or tap "Use my location". Then drag the map so the pin is on your gate.');
+}
+function mapCenter(){
+  if(LOC.engine==='google'){const p=GM.map.getCenter();return{lat:+p.lat().toFixed(6),lng:+p.lng().toFixed(6)}}
+  return MAP.center();
+}
+function moveMap(lat,lng){if(LOC.engine==='google'){GM.map.setCenter({lat,lng});GM.map.setZoom(18)}else MAP.set(lat,lng,17)}
+async function describe(p){ // → {address, city} for the pinned spot
+  if(LOC.engine==='google'){
+    const L=GM.last;if(L&&Math.abs(L.lat-p.lat)<2e-4&&Math.abs(L.lng-p.lng)<2e-4)return L; // pin still on the searched place
+    try{const {results}=await GM.geocoder.geocode({location:p});if(results&&results[0])return{address:results[0].formatted_address,city:cityFrom(results[0].address_components)}}catch(e){}
+    return null;
+  }
+  if(OLAST&&Math.abs(OLAST.lat-p.lat)<2e-4&&Math.abs(OLAST.lng-p.lng)<2e-4)return OLAST;
+  const g=await placeName(p);if(!g||!g.display_name)return null;
+  const a=g.address||{};return{address:g.display_name,city:[a.city||a.town||a.village||a.county,a.state].filter(Boolean).join(', ')};
+}
+async function openMap(){
+  $('#locOpen').hidden=true;$('#locOpen').classList.remove('need');$('#locPanel').hidden=false;$('#locDone').hidden=true;
+  const c=PIN||DEFAULT_CENTER,cfg=await CONFIG;
+  if(cfg.googleMapsKey&&LOC.engine!=='osm'){try{await useGoogleMap(c,cfg.googleMapsKey);return}catch(e){console.warn('Google Maps unavailable, using the backup map:',e.message)}}
+  useBackupMap(c);
+}
+/* free address search for the backup map (photon.komoot.io, OpenStreetMap data) */
+let OLAST=null,oTimer,oCtl,oHits=[],oSel=-1;
+function oParts(p){
+  const street=p.street?(p.housenumber?p.housenumber+' ':'')+p.street:'';
+  const parts=[p.name,street,p.district||p.locality,p.city||p.county,p.state,p.postcode].filter(Boolean);
+  return parts.filter((x,i)=>parts.indexOf(x)===i);
+}
+const ex=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function oShow(html){const u=$('#ores');u.innerHTML=html;u.hidden=!html}
+async function oSearch(q){
+  if(oCtl)oCtl.abort();oCtl=new AbortController();
+  const c=MAP.center();
+  try{
+    const r=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=10&lang=en&lat=${c.lat}&lon=${c.lng}&bbox=68,6,98,37`,{signal:oCtl.signal});
+    const j=await r.json();
+    oHits=(j.features||[]).filter(f=>f.geometry&&(!f.properties.countrycode||f.properties.countrycode==='IN')).slice(0,6);oSel=-1;
+    oShow(oHits.length?oHits.map((f,i)=>{const ps=oParts(f.properties);return `<li role="option" data-i="${i}"><b>${ex(ps[0])}</b><small>${ex(ps.slice(1).join(', '))}</small></li>`}).join('')
+      :'<li class="msg">No matches. Try a nearby landmark or area name, or drag the map.</li>');
+  }catch(e){if(e.name!=='AbortError')oShow('<li class="msg">Search isn’t available right now. Please drag the map or use your location.</li>')}
+}
+function oPick(i){
+  const f=oHits[i];if(!f)return;
+  const [lng,lat]=f.geometry.coordinates,p=f.properties,ps=oParts(p);
+  MAP.set(lat,lng,17);
+  const c=MAP.center();
+  OLAST={lat:c.lat,lng:c.lng,address:ps.join(', '),city:[p.city||p.county,p.state].filter(Boolean).join(', ')};
+  $('#oq').value=ps[0];oShow('');$('#oq').blur();
+  hint('Now drag the map so the pin sits exactly on your gate or building, then confirm.');
+}
+$('#oq').addEventListener('input',()=>{clearTimeout(oTimer);const q=$('#oq').value.trim();if(q.length<3){oShow('');return}oTimer=setTimeout(()=>oSearch(q),350)});
+$('#oq').addEventListener('keydown',e=>{
+  const lis=[...$('#ores').querySelectorAll('li[data-i]')];
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!lis.length)return;oSel=(oSel+(e.key==='ArrowDown'?1:-1)+lis.length)%lis.length;lis.forEach((l,i)=>l.classList.toggle('on',i===oSel))}
+  else if(e.key==='Enter'){e.preventDefault();if(lis.length)oPick(oSel>=0?oSel:0)}
+  else if(e.key==='Escape'){e.stopPropagation();oShow('')}
+});
+$('#ores').addEventListener('click',e=>{const li=e.target.closest('li[data-i]');if(li)oPick(+li.dataset.i)});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('#osearch'))oShow('')});
+
+$('#locOpen').onclick=openMap;
+$('#locEdit').onclick=openMap;
 $('#locMe').onclick=()=>{
-  if(!navigator.geolocation){$('#locHint').textContent='Your browser can’t share location. Please drag the map instead.';return}
+  if(!navigator.geolocation){hint('Your browser can’t share location. Please search or drag the map instead.');return}
   $('#locMe').textContent='Finding you…';
-  navigator.geolocation.getCurrentPosition(p=>{MAP.set(p.coords.latitude,p.coords.longitude,17);$('#locMe').textContent='◎ Use my location';$('#locHint').textContent='Found you! Drag the map to fine-tune, then confirm.'},
-    ()=>{$('#locMe').textContent='◎ Use my location';$('#locHint').textContent='Couldn’t get your location (permission off?). Please drag the map instead.'},{enableHighAccuracy:true,timeout:12000});
+  navigator.geolocation.getCurrentPosition(p=>{moveMap(p.coords.latitude,p.coords.longitude);$('#locMe').textContent='◎ Use my location';hint('Found you! Drag the map to fine-tune, then confirm.')},
+    ()=>{$('#locMe').textContent='◎ Use my location';hint('Couldn’t get your location (permission off?). Please search or drag the map instead.')},{enableHighAccuracy:true,timeout:12000});
 };
 $('#locOk').onclick=async()=>{
-  PIN=MAP.center();
-  $('#locPanel').hidden=true;$('#locDone').hidden=false;$('#locTxt').textContent='Location pinned';
-  const g=await placeName(PIN);
-  if(g&&g.display_name){
-    $('#locTxt').textContent=shortAddr(g.display_name);
-    if(!$('#ad').value.trim())$('#ad').value=g.display_name;
-    const a=g.address||{},city=a.city||a.town||a.village||a.county||'';
-    if(!$('#ct').value.trim()&&city)$('#ct').value=city+(a.state?', '+a.state:'');
-  }
+  const p=mapCenter();$('#locOk').textContent='Saving…';
+  const d=await describe(p);$('#locOk').textContent='Confirm this location';
+  PIN={lat:p.lat,lng:p.lng,address:d&&d.address?d.address:`Pinned location (${p.lat}, ${p.lng})`,city:d&&d.city?d.city:''};
+  $('#ct').value=PIN.city;$('#locTxt').textContent=PIN.address;
+  $('#locPanel').hidden=true;$('#locDone').hidden=false;err('');
+  if(!$('#ad').value.trim())$('#ad').focus({preventScroll:true});
 };
 
 /* ---------- richer motion ---------- */
