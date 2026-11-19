@@ -2,12 +2,14 @@
 // 1. checks the payment is genuine (HMAC signature)
 // 2. gives the order the next serial invoice number (OTR/26-27/0001 …) and saves it on the Razorpay order
 // 3. emails YOU the order confirmation + receipt, and the CUSTOMER a thank-you note + receipt (via Resend)
-// 4. reduces stock.  Order details are read back from Razorpay, not from the browser.
+// 4. reduces stock  5. saves the order to your order history (see /admin).
+// Order details are read back from Razorpay, not from the browser.
 // Safe to call twice: the second call changes nothing and sends nothing.
 const { handler, HttpError, razorpay, validSignature, notifyOwner, emailCustomer, esc, istNow, mapLink } = require('./_lib');
 const { reduceStock, unpackCart } = require('./_stock');
 const { bill, money, fyLabel, invoicePrefix, invoiceUrl, siteBase, receiptEmailHtml } = require('./_bill');
 const { invoiceNumberFor } = require('./_counter');
+const { saveOrder, firstTime } = require('./_orders');
 
 module.exports = handler(async (body, req) => {
   const orderId = String(body.razorpay_order_id || '');
@@ -28,6 +30,8 @@ module.exports = handler(async (body, req) => {
     await razorpay('orders/' + encodeURIComponent(orderId),
       { notes: { ...n, invoice_no: invoiceNo, payment_id: paymentId, paid_at: when.toISOString() } }, 'PATCH');
   } catch (e) { console.error('[razorpay] could not save the invoice number on the order:', e.message); }
+  // If this same payment is being confirmed twice at the same moment, only the first one carries on.
+  if (!(await firstTime('paid:' + orderId))) return { ok: true, ref, invoiceNo, invoiceUrl: link };
 
   const cart = unpackCart(n.cart);
   const b = bill(cart, Number(n.delivery || 0));
@@ -64,6 +68,12 @@ module.exports = handler(async (body, req) => {
     n.email && n.email !== '-' ? emailCustomer(n.email, `${thanks} – Invoice ${invoiceNo}`, custText,
       receiptEmailHtml({ ...receipt, intro: custIntro }), 'ORDER') : null,
     reduceStock(ref, cart.map(i => ({ id: i.id, qty: i.qty }))),
+    saveOrder({
+      ref, invoiceNo, date: when.toISOString(), status: 'Paid online', paymentId,
+      name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address, map,
+      items: b.lines.map(l => ({ name: l.name, qty: l.qty, price: l.price, amount: l.incl })),
+      iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, delivery: b.delivery, total: b.total, invoiceUrl: link,
+    }),
   ]);
 
   return { ok: true, ref, invoiceNo, invoiceUrl: link };

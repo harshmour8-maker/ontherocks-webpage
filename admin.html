@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Orders – On The Rocks admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+:root{--k:#000;--w:#fff;--g:#666;--l:#f2f2f2;--red:#b00020;--grn:#0a7d32;--f:Helvetica,Arial,sans-serif}
+body{font:14px/1.4 var(--f);color:var(--k);background:var(--l);min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+header{background:var(--k);color:var(--w);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:5}
+header b{font-size:18px;font-weight:900;letter-spacing:.03em;text-transform:uppercase}
+header small{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#aaa}
+header button{background:none;border:1px solid #fff;color:#fff;padding:7px 12px;cursor:pointer;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+main{max-width:1280px;margin:0 auto;padding:18px}
+.card{background:var(--w);border:2px solid var(--k);padding:18px}
+#login{max-width:380px;margin:12vh auto;display:grid;gap:12px}
+#login h1{font-size:22px}
+input,select{border:2px solid var(--k);padding:10px 12px;background:var(--w);border-radius:0;width:100%}
+.btn{background:var(--k);color:var(--w);border:2px solid var(--k);padding:10px 16px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:12px;cursor:pointer;white-space:nowrap}
+.btn.o{background:var(--w);color:var(--k)}
+.btn:disabled{opacity:.4;cursor:default}
+.msg{font-weight:700;color:var(--red);min-height:1.2em}
+.bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.bar label{display:grid;gap:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.bar .acts{display:flex;gap:8px;grid-column:span 2}
+#custom{display:contents}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.sum div{background:var(--w);border:2px solid var(--k);padding:12px}
+.sum span{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--g)}
+.sum b{font-size:22px;font-weight:900}
+.sum div.dark{background:var(--k);color:var(--w)}.sum div.dark span{color:#bbb}
+.note{font-size:12px;color:var(--g);margin:-6px 0 12px}
+.tw{background:var(--w);border:2px solid var(--k);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th{background:var(--k);color:var(--w);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:9px 10px;position:sticky;top:0}
+td{padding:10px;border-bottom:1px solid #e3e3e3;vertical-align:top}
+tr:hover td{background:#fafafa}
+td.n{text-align:right;white-space:nowrap}
+td small{display:block;color:var(--g);font-size:12px}
+.pill{display:inline-block;padding:3px 8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border:2px solid currentColor;white-space:nowrap}
+.pill.paid{color:var(--grn)}.pill.wa{color:#a15c00}
+td select{padding:6px 8px;font-size:13px;min-width:150px}
+td select.Delivered{border-color:var(--grn);color:var(--grn);font-weight:700}
+td select.Cancelled{border-color:var(--red);color:var(--red);font-weight:700}
+td select.New{font-weight:700}
+.links a{display:inline-block;margin:0 8px 4px 0;font-weight:700;color:var(--k)}
+.items{max-width:260px}
+.empty{padding:40px;text-align:center;color:var(--g)}
+.cancelled td{color:#999}.cancelled td b{text-decoration:line-through}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--k);color:var(--w);padding:10px 16px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+@media(max-width:760px){
+  main{padding:12px}
+  .bar .acts{grid-column:1/-1}
+  .sum b{font-size:18px}
+  table{min-width:0}
+  thead{display:none}
+  tr{display:block;border-bottom:2px solid var(--k);padding:8px 0}
+  td{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border:0;padding:6px 14px}
+  td>div{text-align:right;min-width:0;overflow-wrap:anywhere}
+  td small{font-size:12px}
+  .links a{margin:0 0 4px 12px}
+  td::before{content:attr(data-l);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--g);text-align:left;flex:none}
+  td.n{white-space:normal}
+  .items{max-width:none}
+  td select{min-width:0;width:auto}
+}
+</style>
+</head>
+<body>
+<header><div><b>On The Rocks</b><small>Order history</small></div><button id="out" hidden>Log out</button></header>
+<main>
+  <form id="login" class="card" autocomplete="on">
+    <h1>Admin login</h1>
+    <p>Enter the admin password (ADMIN_PASSWORD in Vercel).</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+    <button class="btn" id="go">Open orders</button>
+    <p class="msg" id="lmsg"></p>
+  </form>
+
+  <section id="app" hidden>
+    <div class="card bar">
+      <label>Period<select id="period">
+        <option value="today">Today</option><option value="month" selected>This month</option><option value="last">Last month</option>
+        <option value="fy">This financial year</option><option value="all">All time</option><option value="custom">Choose dates…</option></select></label>
+      <span id="custom" hidden><label>From<input type="date" id="from"></label><label>To<input type="date" id="to"></label></span>
+      <label>Payment<select id="pay"><option value="">All orders</option><option value="Paid online">Paid online</option><option value="WhatsApp – not paid">WhatsApp – not paid</option></select></label>
+      <label>Delivery status<select id="ful"><option value="">Any</option></select></label>
+      <label>Search<input id="q" type="search" placeholder="Name, phone, invoice no…"></label>
+      <div class="acts"><button class="btn o" id="refresh" type="button">Refresh</button><button class="btn" id="csv" type="button">Download Excel (CSV)</button></div>
+    </div>
+    <div class="sum" id="sum"></div>
+    <p class="note">Totals count <b>paid online</b> orders in this period that are not Cancelled. Use them for your GST return (taxable value, CGST, SGST).</p>
+    <p class="msg" id="amsg"></p>
+    <div class="tw"><table><thead><tr><th>Date</th><th>Invoice / order</th><th>Customer</th><th>Deliver to</th><th>Items</th><th class="n">Total</th><th>Payment</th><th>Delivery status</th><th>Links</th></tr></thead><tbody id="rows"></tbody></table></div>
+  </section>
+</main>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const IST=5.5*3600e3;
+let KEY='';try{KEY=sessionStorage.getItem('otrAdmin')||''}catch(e){}
+let ALL=[],OPTS=['New','Out for delivery','Delivered','Cancelled'];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>'₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1800)};
+const istDate=ms=>{const d=new Date(ms+IST);return{y:d.getUTCFullYear(),m:d.getUTCMonth(),d:d.getUTCDate()}};
+const istStart=(y,m,d)=>Date.UTC(y,m,d)-IST; // midnight IST
+const fmt=iso=>new Date(iso).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function range(){
+  const now=Date.now(),t=istDate(now),p=$('#period').value;
+  if(p==='today')return[istStart(t.y,t.m,t.d),now];
+  if(p==='month')return[istStart(t.y,t.m,1),now];
+  if(p==='last')return[istStart(t.y,t.m-1,1),istStart(t.y,t.m,1)-1];
+  if(p==='fy'){const y=t.m>=3?t.y:t.y-1;return[istStart(y,3,1),now]}
+  if(p==='custom'){const f=$('#from').value,to=$('#to').value;const a=f?f.split('-').map(Number):null,b=to?to.split('-').map(Number):null;
+    return[a?istStart(a[0],a[1]-1,a[2]):0,b?istStart(b[0],b[1]-1,b[2]+1)-1:now]}
+  return[0,now];
+}
+async function call(body){
+  const r=await fetch('/api/admin-orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,...body})});
+  const j=await r.json().catch(()=>({}));
+  if(r.status===401){logout('Wrong password.');throw new Error('Wrong password.')}
+  if(!r.ok)throw new Error(j.error||'Something went wrong.');
+  return j;
+}
+async function load(){
+  $('#amsg').textContent='';$('#refresh').disabled=true;$('#refresh').textContent='Loading…';
+  try{const [from,to]=range();const j=await call({action:'list',from,to});ALL=j.orders||[];if(j.fulfilmentOptions)OPTS=j.fulfilmentOptions;fillFul();draw()}
+  catch(e){$('#amsg').textContent=e.message}
+  finally{$('#refresh').disabled=false;$('#refresh').textContent='Refresh'}
+}
+function fillFul(){const s=$('#ful'),v=s.value;s.innerHTML='<option value="">Any</option>'+OPTS.map(o=>`<option>${esc(o)}</option>`).join('');s.value=v}
+function shown(){
+  const pay=$('#pay').value,ful=$('#ful').value,q=$('#q').value.trim().toLowerCase();
+  return ALL.filter(o=>(!pay||o.status===pay)&&(!ful||(o.fulfilment||'New')===ful)&&
+    (!q||[o.name,o.phone,o.email,o.invoiceNo,o.ref,o.address,o.mapAddress].join(' ').toLowerCase().includes(q)));
+}
+function draw(){
+  const list=shown(),paid=ALL.filter(o=>o.status==='Paid online'&&o.fulfilment!=='Cancelled'),wa=ALL.filter(o=>o.status!=='Paid online');
+  const s=k=>paid.reduce((a,o)=>a+(Number(o[k])||0),0);
+  $('#sum').innerHTML=`<div class="dark"><span>Paid orders</span><b>${paid.length}</b></div><div class="dark"><span>Sales (paid)</span><b>${inr(s('total'))}</b></div>
+    <div><span>Taxable value</span><b>${inr(s('taxable'))}</b></div><div><span>CGST</span><b>${inr(s('cgst'))}</b></div><div><span>SGST</span><b>${inr(s('sgst'))}</b></div>
+    <div><span>Delivery charges</span><b>${inr(s('delivery'))}</b></div><div><span>WhatsApp orders</span><b>${wa.length}</b></div>`;
+  $('#rows').innerHTML=list.length?list.map(o=>{const f=o.fulfilment||'New';const tel=String(o.phone||'').replace(/[^\d+]/g,'');const wa=tel.replace(/^\+/,'').replace(/^(\d{10})$/,'91$1');
+    return `<tr class="${f==='Cancelled'?'cancelled':''}">
+    <td data-l="Date"><div>${esc(fmt(o.date))}</div></td>
+    <td data-l="Invoice / order"><div><b>${esc(o.invoiceNo||'—')}</b><small>${esc(o.ref)}</small></div></td>
+    <td data-l="Customer"><div><b>${esc(o.name)}</b><small><a href="tel:${esc(tel)}">${esc(o.phone)}</a></small><small>${esc(o.email&&o.email!=='-'?o.email:'')}</small></div></td>
+    <td data-l="Deliver to"><div>${esc(o.address)}<small>${esc(o.mapAddress&&o.mapAddress!=='-'?o.mapAddress:'')}</small></div></td>
+    <td data-l="Items" class="items"><div>${(o.items||[]).map(i=>`${esc(i.qty)} × ${esc(i.name)}`).join('<br>')}${o.delivery?`<small>+ delivery ${inr(o.delivery)}</small>`:'<small>free delivery</small>'}</div></td>
+    <td data-l="Total" class="n"><div><b>${inr(o.total)}</b><small>GST ${inr((Number(o.cgst)||0)+(Number(o.sgst)||0))}</small></div></td>
+    <td data-l="Payment"><div><span class="pill ${o.status==='Paid online'?'paid':'wa'}">${o.status==='Paid online'?'Paid':'WhatsApp – not paid'}</span>${o.paymentId?`<small>${esc(o.paymentId)}</small>`:''}</div></td>
+    <td data-l="Delivery status"><div><select class="${esc(f)}" data-ref="${esc(o.ref)}">${OPTS.map(x=>`<option${x===f?' selected':''}>${esc(x)}</option>`).join('')}</select></div></td>
+    <td data-l="Links" class="links"><div>${o.invoiceUrl?`<a href="${esc(o.invoiceUrl)}" target="_blank" rel="noopener">Invoice</a>`:''}${o.map?`<a href="${esc(o.map)}" target="_blank" rel="noopener">Map</a>`:''}${wa?`<a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>`:''}</div></td></tr>`}).join('')
+    :`<tr><td class="empty" colspan="9">No orders for this period${ALL.length?' match your filters':''}.</td></tr>`;
+}
+$('#rows').addEventListener('change',async e=>{
+  const s=e.target.closest('select[data-ref]');if(!s)return;const ref=s.dataset.ref,v=s.value,o=ALL.find(x=>x.ref===ref),old=o&&(o.fulfilment||'New');
+  s.disabled=true;
+  try{await call({action:'fulfilment',ref,value:v});if(o)o.fulfilment=v;toast(`${o&&o.invoiceNo||ref}: ${v}`);draw()}
+  catch(err){if(o)o.fulfilment=old;draw();$('#amsg').textContent=err.message}
+});
+function csv(){
+  const cols=[['Date',o=>fmt(o.date)],['Invoice no',o=>o.invoiceNo],['Order ref',o=>o.ref],['Payment',o=>o.status],['Delivery status',o=>o.fulfilment||'New'],['Payment ID',o=>o.paymentId],
+    ['Name',o=>o.name],['Phone',o=>o.phone],['Email',o=>o.email],['Flat / landmark',o=>o.address],['Map address',o=>o.mapAddress],['Map link',o=>o.map],
+    ['Items',o=>(o.items||[]).map(i=>`${i.qty} x ${i.name}`).join('; ')],['Ice value (incl. GST)',o=>o.iceIncl],['Taxable value',o=>o.taxable],['CGST',o=>o.cgst],['SGST',o=>o.sgst],
+    ['Delivery',o=>o.delivery],['Total',o=>o.total],['Invoice link',o=>o.invoiceUrl]];
+  const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const body=[cols.map(c=>c[0]).join(',')].concat(shown().slice().reverse().map(o=>cols.map(c=>q(c[1](o))).join(','))).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+body],{type:'text/csv;charset=utf-8'}));
+  const t=istDate(Date.now());a.download=`OnTheRocks-orders-${t.y}-${String(t.m+1).padStart(2,'0')}-${String(t.d).padStart(2,'0')}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+}
+function logout(m){KEY='';try{sessionStorage.removeItem('otrAdmin')}catch(e){}$('#app').hidden=true;$('#out').hidden=true;$('#login').hidden=false;$('#lmsg').textContent=m||''}
+function enter(){$('#login').hidden=true;$('#app').hidden=false;$('#out').hidden=false;load()}
+$('#login').onsubmit=async e=>{
+  e.preventDefault();KEY=$('#pw').value;$('#go').disabled=true;$('#lmsg').textContent='';
+  try{const [from,to]=range();const j=await call({action:'list',from,to});try{sessionStorage.setItem('otrAdmin',KEY)}catch(e){}
+    ALL=j.orders||[];if(j.fulfilmentOptions)OPTS=j.fulfilmentOptions;$('#login').hidden=true;$('#app').hidden=false;$('#out').hidden=false;fillFul();draw()}
+  catch(err){if(err.message!=='Wrong password.')$('#lmsg').textContent=err.message;else $('#lmsg').textContent='Wrong password.'}
+  finally{$('#go').disabled=false}
+};
+$('#out').onclick=()=>logout();
+$('#period').onchange=()=>{$('#custom').hidden=$('#period').value!=='custom';if($('#period').value!=='custom')load()};
+$('#from').onchange=$('#to').onchange=()=>load();
+['#pay','#ful'].forEach(s=>$(s).onchange=draw);$('#q').oninput=draw;
+$('#refresh').onclick=load;$('#csv').onclick=csv;
+if(KEY)enter();
+</script>
+</body>
+</html>

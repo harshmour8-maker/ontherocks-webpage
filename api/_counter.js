@@ -47,4 +47,4 @@ async function invoiceNumberFor(orderId, prefix, fy) {
   }
 }
 
-module.exports = { invoiceNumberFor, counterReady };
+module.exports = { invoiceNumberFor, counterReady, redis };
