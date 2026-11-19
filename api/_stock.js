@@ -66,9 +66,14 @@ async function reduceStock(order, items) {
   }
 }
 
-// "otr1kg:2,globe:1" <-> [{id,qty}] — compact form stored in the Razorpay order notes.
-const packCart = items => items.map(i => `${i.id}:${i.qty}`).join(',').slice(0, 255);
+// "otr1kg:2:80,globe:1:40" (id:qty:price) <-> [{id,qty,price,name}] — compact form stored in the Razorpay order
+// notes, so the invoice always shows the price the customer actually paid.
+const packCart = items => items.map(i => `${i.id}:${i.qty}:${i.price}`).join(',').slice(0, 255);
 const unpackCart = s => String(s || '').split(',').map(p => p.split(':'))
-  .filter(([id, q]) => CATALOG[id] && Number(q) > 0).map(([id, q]) => ({ id, qty: Math.floor(Number(q)) }));
+  .filter(([id, q]) => CATALOG[id] && Number(q) > 0)
+  .map(([id, q, p]) => ({
+    id, qty: Math.floor(Number(q)), name: CATALOG[id].n,
+    price: p !== undefined && p !== '' && Number.isFinite(Number(p)) ? Number(p) : CATALOG[id].p,
+  }));
 
 module.exports = { getStock, inStock, checkCartStock, reduceStock, packCart, unpackCart };

@@ -43,7 +43,17 @@ function priceCart(items) {
     total += prod.p * qty;
     lines.push(`${qty} x ${prod.n} (${rupees(prod.p * qty)})`);
   }
-  return { total, lines };
+  // Delivery: free from FREE_DELIVERY_FROM (default ₹299), otherwise DELIVERY_FEE (default ₹99).
+  const subtotal = total, d = deliveryRules();
+  const delivery = subtotal < d.freeFrom ? d.fee : 0;
+  lines.push(delivery ? `Delivery (${rupees(delivery)})` : 'Delivery (FREE)');
+  return { total: subtotal + delivery, subtotal, delivery, lines };
+}
+
+// Change in Vercel without touching code: FREE_DELIVERY_FROM (default 299), DELIVERY_FEE (default 99).
+function deliveryRules() {
+  const n = (k, d) => { const v = Number(env(k)); return env(k) !== '' && Number.isFinite(v) && v >= 0 ? v : d; };
+  return { freeFrom: n('FREE_DELIVERY_FROM', 299), fee: n('DELIVERY_FEE', 99) };
 }
 
 function checkCustomer(c) {
@@ -66,11 +76,29 @@ function checkCustomer(c) {
   if (out.lat === undefined && env('REQUIRE_MAP_PIN', 'yes') !== 'no') {
     throw new HttpError(400, 'Please select your delivery address on the map.');
   }
+  if (out.lat !== undefined) {
+    const area = deliveryArea();
+    if (distanceKm(out.lat, out.lng, area.lat, area.lng) > area.km) {
+      throw new HttpError(400, `Sorry, we currently deliver only within ${area.name}. Please choose an address in ${area.name}, or WhatsApp us for other places.`);
+    }
+  }
   if (!out.address) throw new HttpError(400, 'Add your flat / house number and a landmark.');
   if (!out.city) out.city = '-';
   if (!out.name || !PHONE_RE.test(out.phone)) throw new HttpError(400, 'Add your name and a valid phone number.');
   if (out.email && !EMAIL_RE.test(out.email)) out.email = '';
   return out;
+}
+
+// Where we deliver: a circle around a centre point. Change it in Vercel without touching code:
+//   DELIVERY_AREA_NAME (default Guwahati), DELIVERY_LAT / DELIVERY_LNG (centre), DELIVERY_RADIUS_KM (default 20)
+function deliveryArea() {
+  const n = (k, d) => { const v = Number(env(k)); return Number.isFinite(v) && env(k) !== '' ? v : d; };
+  return { name: env('DELIVERY_AREA_NAME', 'Guwahati'), lat: n('DELIVERY_LAT', 26.1445), lng: n('DELIVERY_LNG', 91.7362), km: n('DELIVERY_RADIUS_KM', 20) };
+}
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, r = x => x * Math.PI / 180;
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lng2 - lng1) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 // Google Maps link for a pinned location ("lat,lng"), or '' when there is none.
@@ -81,11 +109,11 @@ function mapLink(latlng) {
 // ---------------------------------------------------------------------------
 // Razorpay REST (no SDK needed)
 // ---------------------------------------------------------------------------
-async function razorpay(path, body) {
+async function razorpay(path, body, method) {
   const id = env('RAZORPAY_KEY_ID'), secret = env('RAZORPAY_KEY_SECRET');
   if (!id || !secret) throw new HttpError(503, 'Online payment is not set up yet. Please order on WhatsApp.');
   const r = await fetch('https://api.razorpay.com/v1/' + path, {
-    method: body ? 'POST' : 'GET',
+    method: method || (body ? 'POST' : 'GET'),
     headers: {
       Authorization: 'Basic ' + Buffer.from(id + ':' + secret).toString('base64'),
       'Content-Type': 'application/json',
@@ -193,6 +221,6 @@ const istNow = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 
 module.exports = {
   CATALOG, env, HttpError, clean, cleanMultiline, esc, rupees, PHONE_RE, EMAIL_RE,
-  priceCart, checkCustomer, mapLink, razorpay, validSignature,
+  priceCart, deliveryRules, checkCustomer, mapLink, deliveryArea, distanceKm, razorpay, validSignature,
   sendEmail, notifyOwner, emailCustomer, emailHtml, handler, istNow,
 };

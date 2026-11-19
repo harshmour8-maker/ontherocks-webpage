@@ -1,24 +1,25 @@
 // POST /api/create-order  { items:[{id,qty}], customer:{name,phone,email,city,address,lat?,lng?} }
 // Prices the cart on the server, checks stock, and creates a Razorpay order. Customer and item
 // details are saved in the order's notes, so every order is visible in your Razorpay dashboard too.
-const { handler, priceCart, checkCustomer, razorpay, env } = require('./_lib');
+const { handler, HttpError, priceCart, checkCustomer, razorpay, env, CATALOG } = require('./_lib');
 const { checkCartStock, packCart } = require('./_stock');
 
 module.exports = handler(async body => {
-  const { total, lines } = priceCart(body.items);
+  const { total, delivery, lines } = priceCart(body.items);
   const c = checkCustomer(body.customer);
-  const items = body.items.map(i => ({ id: i.id, qty: Math.floor(Number(i.qty)) }));
+  if (!c.email) throw new HttpError(400, 'Add your email so we can send your receipt.');
+  const items = body.items.map(i => ({ id: i.id, qty: Math.floor(Number(i.qty)), price: CATALOG[i.id].p }));
   await checkCartStock(items);
   const ref = 'OTR-' + Date.now().toString(36).toUpperCase();
 
   const order = await razorpay('orders', {
-    amount: total * 100, // paise
+    amount: Math.round(total * 100), // paise
     currency: 'INR',
     receipt: ref,
     notes: {
       name: c.name, phone: c.phone, email: c.email || '-', city: c.city,
       address: c.address, map_address: c.mapAddress || '-', items: lines.join('; ').slice(0, 255), total: String(total),
-      cart: packCart(items),
+      cart: packCart(items), delivery: String(delivery),
       location: c.lat !== undefined ? `${c.lat},${c.lng}` : '-',
     },
   });
