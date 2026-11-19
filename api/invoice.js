@@ -24,5 +24,6 @@ module.exports = async (req, res) => {
     invoiceNo: n.invoice_no, date, orderRef: order.receipt || o, paymentId: n.payment_id,
     buyer: { name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address },
     b: bill(unpackCart(n.cart), Number(n.delivery || 0)),
+    slot: String(n.slot || '').split('|')[0],
   }));
 };

@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="On The Rocks">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
 <title>Orders – On The Rocks admin</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -96,7 +103,7 @@ td select.New{font-weight:700}
     <div class="sum" id="sum"></div>
     <p class="note">Totals count <b>paid online</b> orders in this period that are not Cancelled. Use them for your GST return (taxable value, CGST, SGST).</p>
     <p class="msg" id="amsg"></p>
-    <div class="tw"><table><thead><tr><th>Date</th><th>Invoice / order</th><th>Customer</th><th>Deliver to</th><th>Items</th><th class="n">Total</th><th>Payment</th><th>Delivery status</th><th>Links</th></tr></thead><tbody id="rows"></tbody></table></div>
+    <div class="tw"><table><thead><tr><th>Date</th><th>Invoice / order</th><th>Customer</th><th>Delivery slot &amp; address</th><th>Items</th><th class="n">Total</th><th>Payment</th><th>Delivery status</th><th>Links</th></tr></thead><tbody id="rows"></tbody></table></div>
   </section>
 </main>
 <div id="toast"></div>
@@ -138,7 +145,7 @@ function fillFul(){const s=$('#ful'),v=s.value;s.innerHTML='<option value="">Any
 function shown(){
   const pay=$('#pay').value,ful=$('#ful').value,q=$('#q').value.trim().toLowerCase();
   return ALL.filter(o=>(!pay||o.status===pay)&&(!ful||(o.fulfilment||'New')===ful)&&
-    (!q||[o.name,o.phone,o.email,o.invoiceNo,o.ref,o.address,o.mapAddress].join(' ').toLowerCase().includes(q)));
+    (!q||[o.name,o.phone,o.email,o.invoiceNo,o.ref,o.address,o.mapAddress,o.slot].join(' ').toLowerCase().includes(q)));
 }
 function draw(){
   const list=shown(),paid=ALL.filter(o=>o.status==='Paid online'&&o.fulfilment!=='Cancelled'),wa=ALL.filter(o=>o.status!=='Paid online');
@@ -151,7 +158,7 @@ function draw(){
     <td data-l="Date"><div>${esc(fmt(o.date))}</div></td>
     <td data-l="Invoice / order"><div><b>${esc(o.invoiceNo||'—')}</b><small>${esc(o.ref)}</small></div></td>
     <td data-l="Customer"><div><b>${esc(o.name)}</b><small><a href="tel:${esc(tel)}">${esc(o.phone)}</a></small><small>${esc(o.email&&o.email!=='-'?o.email:'')}</small></div></td>
-    <td data-l="Deliver to"><div>${esc(o.address)}<small>${esc(o.mapAddress&&o.mapAddress!=='-'?o.mapAddress:'')}</small></div></td>
+    <td data-l="Delivery"><div>${o.slot?`<b>${esc(o.slot)}</b><br>`:''}${esc(o.address)}<small>${esc(o.mapAddress&&o.mapAddress!=='-'?o.mapAddress:'')}</small></div></td>
     <td data-l="Items" class="items"><div>${(o.items||[]).map(i=>`${esc(i.qty)} × ${esc(i.name)}`).join('<br>')}${o.delivery?`<small>+ delivery ${inr(o.delivery)}</small>`:'<small>free delivery</small>'}</div></td>
     <td data-l="Total" class="n"><div><b>${inr(o.total)}</b><small>GST ${inr((Number(o.cgst)||0)+(Number(o.sgst)||0))}</small></div></td>
     <td data-l="Payment"><div><span class="pill ${o.status==='Paid online'?'paid':'wa'}">${o.status==='Paid online'?'Paid':'WhatsApp – not paid'}</span>${o.paymentId?`<small>${esc(o.paymentId)}</small>`:''}</div></td>
@@ -167,7 +174,7 @@ $('#rows').addEventListener('change',async e=>{
 });
 function csv(){
   const cols=[['Date',o=>fmt(o.date)],['Invoice no',o=>o.invoiceNo],['Order ref',o=>o.ref],['Payment',o=>o.status],['Delivery status',o=>o.fulfilment||'New'],['Payment ID',o=>o.paymentId],
-    ['Name',o=>o.name],['Phone',o=>o.phone],['Email',o=>o.email],['Flat / landmark',o=>o.address],['Map address',o=>o.mapAddress],['Map link',o=>o.map],
+    ['Delivery slot',o=>o.slot||''],['Name',o=>o.name],['Phone',o=>o.phone],['Email',o=>o.email],['Flat / landmark',o=>o.address],['Map address',o=>o.mapAddress],['Map link',o=>o.map],
     ['Items',o=>(o.items||[]).map(i=>`${i.qty} x ${i.name}`).join('; ')],['Ice value (incl. GST)',o=>o.iceIncl],['Taxable value',o=>o.taxable],['CGST',o=>o.cgst],['SGST',o=>o.sgst],
     ['Delivery',o=>o.delivery],['Total',o=>o.total],['Invoice link',o=>o.invoiceUrl]];
   const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};

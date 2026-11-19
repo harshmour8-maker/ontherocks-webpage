@@ -81,7 +81,7 @@ function inWords(amount) {
 }
 
 // Printable A4 invoice (customer opens it and uses Print → Save as PDF).
-function invoiceHtml({ invoiceNo, date, orderRef, paymentId, buyer, b }) {
+function invoiceHtml({ invoiceNo, date, orderRef, paymentId, buyer, b, slot }) {
   const s = seller();
   const isTax = !!s.gstin;
   const half = r2(b.rate / 2);
@@ -114,7 +114,7 @@ th{background:#000;color:#fff;font-size:11px;text-transform:uppercase;letter-spa
   <div class="meta"><h1>${isTax ? 'TAX INVOICE' : 'INVOICE'}</h1><div class="muted">Original for recipient</div><br>
   <b>Invoice no:</b> ${esc(invoiceNo)}<br><b>Date:</b> ${esc(date)}<br><b>Order:</b> ${esc(orderRef)}<br><b>Payment ID:</b> ${esc(paymentId || '-')}</div></div>
  <div class="grid"><div><h3>Billed / delivered to</h3><b>${esc(buyer.name)}</b><br>${esc(buyer.address)}${buyer.mapAddress && buyer.mapAddress !== '-' ? '<br>' + esc(buyer.mapAddress) : ''}<br>Phone: ${esc(buyer.phone)}${buyer.email && buyer.email !== '-' ? '<br>' + esc(buyer.email) : ''}</div>
-  <div><h3>Place of supply</h3>${esc(s.state)} (${esc(s.stateCode)})<br><br><h3>Payment</h3>Paid online (Razorpay)</div></div>
+  <div><h3>Place of supply</h3>${esc(s.state)} (${esc(s.stateCode)})<br><br><h3>Payment</h3>Paid online (Razorpay)${slot ? '<br><br><h3>Delivery slot</h3>' + esc(slot) : ''}</div></div>
  <div class="tw"><table class="items"><thead><tr><th>#</th><th>Item</th><th>HSN</th><th class="n">Qty</th><th class="n">Rate (incl. GST)</th><th class="n">Taxable value</th>
   <th class="n">CGST ${half}%</th><th class="n">SGST ${half}%</th><th class="n">Amount</th></tr></thead><tbody>${rows}${dRow}</tbody></table></div>
  <table class="sum">
@@ -132,7 +132,7 @@ th{background:#000;color:#fff;font-size:11px;text-transform:uppercase;letter-spa
 
 // Receipt for EMAILS (inline styles, table layout: looks right in Gmail, Outlook and phone mail apps).
 // intro = message shown above the receipt (thank-you note for the customer, order alert for you).
-function receiptEmailHtml({ intro, invoiceNo, date, orderRef, paymentId, buyer, b, link }) {
+function receiptEmailHtml({ intro, invoiceNo, date, orderRef, paymentId, buyer, b, link, slot }) {
   const s = seller();
   const half = r2(b.rate / 2);
   const td = 'padding:7px 8px;border-bottom:1px solid #e5e5e5;font-size:13px;vertical-align:top';
@@ -154,7 +154,7 @@ function receiptEmailHtml({ intro, invoiceNo, date, orderRef, paymentId, buyer, 
    <td style="font-size:12px;line-height:1.55;vertical-align:top;text-align:right"><b style="font-size:15px">${s.gstin ? 'TAX INVOICE' : 'INVOICE'}</b><br>
     No: <b>${esc(invoiceNo)}</b><br>Date: ${esc(date)}<br>Order: ${esc(orderRef)}<br>Payment: ${esc(paymentId || '-')}</td></tr></table></td></tr>
 <tr><td style="padding:4px 24px 12px;font-size:12px;line-height:1.55"><span style="color:#777;text-transform:uppercase;letter-spacing:.08em;font-size:10px">Billed / delivered to</span><br>
-  <b>${esc(buyer.name)}</b> · ${esc(buyer.phone)}<br>${esc(buyer.address)}${buyer.mapAddress && buyer.mapAddress !== '-' ? '<br>' + esc(buyer.mapAddress) : ''}<br>Place of supply: ${esc(s.state)} (${esc(s.stateCode)})</td></tr>
+  <b>${esc(buyer.name)}</b> · ${esc(buyer.phone)}<br>${esc(buyer.address)}${buyer.mapAddress && buyer.mapAddress !== '-' ? '<br>' + esc(buyer.mapAddress) : ''}${slot ? '<br>Delivery slot: <b>' + esc(slot) + '</b>' : ''}<br>Place of supply: ${esc(s.state)} (${esc(s.stateCode)})</td></tr>
 <tr><td style="padding:0 24px">
   <table role="presentation" width="100%" style="border-collapse:collapse">
    <tr><th style="${td};text-align:left;background:#000;color:#fff;font-size:11px">ITEM</th><th style="${tdr};background:#000;color:#fff;font-size:11px">TAXABLE</th>

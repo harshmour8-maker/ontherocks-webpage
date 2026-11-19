@@ -7,7 +7,7 @@
 // Safe to call twice: the second call changes nothing and sends nothing.
 const { handler, HttpError, razorpay, validSignature, notifyOwner, emailCustomer, esc, istNow, mapLink } = require('./_lib');
 const { reduceStock, unpackCart } = require('./_stock');
-const { bill, money, fyLabel, invoicePrefix, invoiceUrl, siteBase, receiptEmailHtml } = require('./_bill');
+const { bill, money, fyLabel, invoicePrefix, invoiceUrl, invoiceSig, siteBase, receiptEmailHtml } = require('./_bill');
 const { invoiceNumberFor } = require('./_counter');
 const { saveOrder, firstTime } = require('./_orders');
 
@@ -20,9 +20,11 @@ module.exports = handler(async (body, req) => {
 
   const order = await razorpay('orders/' + encodeURIComponent(orderId));
   const n = order.notes || {};
+  const [slot, slotStart] = String(n.slot || '').split('|');
   const ref = order.receipt || orderId;
   const link = invoiceUrl(orderId, siteBase(req));
-  if (n.invoice_no) return { ok: true, ref, invoiceNo: n.invoice_no, invoiceUrl: link }; // already done
+  const orderUrl = `/order?o=${encodeURIComponent(orderId)}&s=${invoiceSig(orderId)}`; // the thank-you page
+  if (n.invoice_no) return { ok: true, ref, invoiceNo: n.invoice_no, invoiceUrl: link, orderUrl }; // already done
 
   const when = new Date();
   const invoiceNo = (await invoiceNumberFor(orderId, invoicePrefix(), fyLabel(when))) || ref;
@@ -31,13 +33,13 @@ module.exports = handler(async (body, req) => {
       { notes: { ...n, invoice_no: invoiceNo, payment_id: paymentId, paid_at: when.toISOString() } }, 'PATCH');
   } catch (e) { console.error('[razorpay] could not save the invoice number on the order:', e.message); }
   // If this same payment is being confirmed twice at the same moment, only the first one carries on.
-  if (!(await firstTime('paid:' + orderId))) return { ok: true, ref, invoiceNo, invoiceUrl: link };
+  if (!(await firstTime('paid:' + orderId))) return { ok: true, ref, invoiceNo, invoiceUrl: link, orderUrl };
 
   const cart = unpackCart(n.cart);
   const b = bill(cart, Number(n.delivery || 0));
   const date = when.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
   const buyer = { name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address };
-  const receipt = { invoiceNo, date, orderRef: ref, paymentId, buyer, b, link };
+  const receipt = { invoiceNo, date, orderRef: ref, paymentId, buyer, b, link, slot };
   const map = mapLink(n.location);
   const itemsText = b.lines.map(l => `${l.qty} x ${l.name} – ${money(l.incl)}`).join('\n');
   const billText = `${itemsText}\nDelivery (no GST): ${b.delivery ? money(b.delivery) : 'FREE'}\n` +
@@ -45,9 +47,9 @@ module.exports = handler(async (body, req) => {
 
   // ---- to you: order confirmation + receipt ----
   const ownerIntro = `<b style="font-size:18px">New paid order ✅</b><br>Invoice <b>${esc(invoiceNo)}</b> · <b>${money(b.total)}</b> paid online · ${esc(istNow())}<br>
-    Deliver to: <b>${esc(n.name)}</b>, ${esc(n.phone)}<br>${esc(n.address)}${n.map_address && n.map_address !== '-' ? ', ' + esc(n.map_address) : ''}
+    ${slot ? `🕒 Delivery slot: <b>${esc(slot)}</b><br>` : ''}Deliver to: <b>${esc(n.name)}</b>, ${esc(n.phone)}<br>${esc(n.address)}${n.map_address && n.map_address !== '-' ? ', ' + esc(n.map_address) : ''}
     ${map ? `<br><a href="${esc(map)}" style="color:#000;font-weight:700">📍 Open delivery location in Google Maps</a>` : ''}`;
-  const ownerText = `New paid order\nInvoice: ${invoiceNo}\nOrder: ${ref}\nPayment ID: ${paymentId}\n\n${billText}\n\n` +
+  const ownerText = `New paid order\nInvoice: ${invoiceNo}\nOrder: ${ref}\nPayment ID: ${paymentId}\nDelivery slot: ${slot || '-'}\n\n${billText}\n\n` +
     `Name: ${n.name}\nPhone: ${n.phone}\nEmail: ${n.email}\nFlat / landmark: ${n.address}\nMap address: ${n.map_address || '-'}\n` +
     `Map pin: ${map || 'Not pinned'}\nInvoice: ${link}\nTime: ${istNow()}`;
 
@@ -55,12 +57,12 @@ module.exports = handler(async (body, req) => {
   const thanks = 'Thank you for ordering from On The Rocks 🧊';
   const custIntro = `Hi ${esc(n.name)},<br><br><b style="font-size:18px">${thanks}</b><br>Cheers!!`;
   const custText = `Hi ${n.name},\n\n${thanks}\nCheers!!\n\nInvoice: ${invoiceNo}\nOrder: ${ref}\n\n${billText}\n\n` +
-    `Deliver to: ${n.address}${n.map_address && n.map_address !== '-' ? ', ' + n.map_address : ''}\n\nView / download your invoice: ${link}\n\n– On The Rocks`;
+    `Delivery slot: ${slot || '-'}\nDeliver to: ${n.address}${n.map_address && n.map_address !== '-' ? ', ' + n.map_address : ''}\n\nView / download your invoice: ${link}\n\n– On The Rocks`;
 
   await Promise.all([
     notifyOwner({
       tag: 'ORDER',
-      subject: `New paid order ${invoiceNo} – ${money(b.total)}`,
+      subject: `New paid order ${invoiceNo} – ${money(b.total)}${slot ? ' – ' + slot : ''}`,
       text: ownerText,
       html: receiptEmailHtml({ ...receipt, intro: ownerIntro }),
       replyTo: n.email && n.email !== '-' ? n.email : undefined,
@@ -71,10 +73,11 @@ module.exports = handler(async (body, req) => {
     saveOrder({
       ref, invoiceNo, date: when.toISOString(), status: 'Paid online', paymentId,
       name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address, map,
+      slot: slot || '', slotStart: slotStart || '',
       items: b.lines.map(l => ({ name: l.name, qty: l.qty, price: l.price, amount: l.incl })),
       iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, delivery: b.delivery, total: b.total, invoiceUrl: link,
     }),
   ]);
 
-  return { ok: true, ref, invoiceNo, invoiceUrl: link };
+  return { ok: true, ref, invoiceNo, invoiceUrl: link, orderUrl };
 });

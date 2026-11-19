@@ -11,6 +11,17 @@ api/enquiry.js          bulk enquiry form: alerts you, sends an acknowledgement 
 api/_lib.js             price list + email/Razorpay helpers
 api/_stock.js           reads/updates stock in your Google Sheet
 api/config.js           GET /api/config – gives the page your Google Maps key
+api/_bill.js            GST calculation, tax invoice page and email receipt layout
+api/_counter.js         serial invoice numbers (Upstash Redis)
+api/_orders.js          order history, saved in the same database
+api/admin-orders.js     data for the admin page (password-protected)
+admin.html              the private admin page: ontherocks.co.in/admin
+apple-touch-icon.png    OTR logo used when the site is added to an iPhone home screen
+icon-*.png, favicon.png, manifest.webmanifest   app icons for Android / browsers
+order.html              thank-you page with full order details, shown after a successful payment
+api/order.js            GET /api/order – order details for the thank-you page (private signed link)
+vercel.json             lets /admin open without ".html"
+api/invoice.js          GET /api/invoice – the customer's printable tax invoice (private link)
 api/stock.js            GET /api/stock – the page uses it to show "Sold out" / "Only N left"
 stock/stock-script.gs   script to paste into the sheet (Extensions → Apps Script)
 .env.example            every setting you need to fill in
@@ -96,6 +107,11 @@ Your [ORDER] email shows **Flat / landmark**, **Map address** and a **Map pin** 
 - With `GOOGLE_MAPS_KEY` set in Vercel → Google Maps + Google address search (setup: guide Step 9).
 - Without it, or if Google fails to load → a free OpenStreetMap backup map, so orders never get stuck.
 
+## Delivery charge and delivery area
+- Orders **below ₹299** pay **₹99 delivery**; ₹299 and above get **free delivery**. The cart shows Subtotal, Delivery and Total, plus "Add ₹X more for FREE delivery".
+- Customers can only pick a delivery spot **within 20 km of central Guwahati** (covers the city, Amingaon/North Guwahati and the airport). Search results are limited to that area too.
+- Both are checked again on the server, so they can't be bypassed. Change them any time in Vercel (FREE_DELIVERY_FROM, DELIVERY_FEE, DELIVERY_RADIUS_KM, etc. — see .env.example) and Redeploy.
+
 ## Stock management (Google Sheet)
 You manage stock from a Google Sheet, on your phone or laptop. The website:
 - shows **Sold out** when the tick box is off or the quantity is 0, and **Only N left** when 10 or fewer are left,
@@ -107,3 +123,41 @@ Columns: **id** (don't change) · **name** · **in_stock** (tick box) · **quant
 If the sheet isn't set up, or can't be reached, everything is treated as in stock, so the shop keeps selling.
 
 Setup steps are in the launch guide, Step 8.
+
+## Invoices, GST and receipt emails
+- **Serial invoice numbers** for paid orders: `OTR/26-27/0001`, `0002`, `0003`… (new series every April). No repeats or gaps, even if two payments arrive at once. Needs the free **Upstash Redis** database connected in Vercel (guide Step 11). Without it, the order ref is used instead.
+- **GST:** ice prices include 5% GST → invoice shows taxable value + CGST 2.5% + SGST 2.5% (place of supply Assam 18). Delivery charge: no GST. Seller details (GSTIN 18ADRPG9635P1ZJ, MSME, FSSAI, address, phones) are on every invoice.
+- **Your email** (NOTIFY_EMAIL, via Resend): "[ORDER] New paid order OTR/26-27/0001 – ₹379.00" with delivery details, a Google Maps link and the full receipt.
+- **Customer email**: "Thank you for ordering from On The Rocks 🧊 … Cheers!!" with the full receipt and a *View / download invoice (PDF)* button. Email is now required to pay online so the receipt can be sent.
+- The order-confirmation screen also shows the invoice number and the download button. Every invoice is saved on the Razorpay order (notes → invoice_no), so your Razorpay dashboard is your order history.
+- Please confirm the GST rate, HSN 2201 and no-GST-on-delivery with your CA.
+
+## Order history – ontherocks.co.in/admin
+- Every order is saved (paid online and WhatsApp) in the Upstash database: invoice no., date, customer, phone, email, address, map link, items, taxable value, CGST, SGST, delivery, total, payment ID.
+- Open **ontherocks.co.in/admin** and enter ADMIN_PASSWORD (set it in Vercel). Works on phone and laptop.
+- Filter by period (today, this/last month, financial year, custom dates), payment type and delivery status; search by name, phone or invoice no.
+- Totals for the period (paid, not cancelled): sales, taxable value, CGST, SGST, delivery – for your GST return.
+- Set each order's delivery status: New → Out for delivery → Delivered (or Cancelled). Cancelled orders drop out of the totals.
+- **Download Excel (CSV)** of whatever is on screen. Links per order: invoice, Google Maps, WhatsApp the customer.
+- Orders placed before this update aren't in the list (they're in your [ORDER] emails and Razorpay).
+
+## Delivery slots (date and 1-hour time)
+
+Customers must pick a delivery day and a 1-hour slot in the cart (step 1) before paying or ordering on WhatsApp.
+The slot is checked again on the server, and it appears in your order email, the customer's receipt,
+the tax invoice, the thank-you page, the admin page (and CSV) and the WhatsApp message.
+
+Optional settings in Vercel → Settings → Environment Variables (defaults shown):
+
+```
+DELIVERY_START_HOUR=10   first slot starts at 10 am
+DELIVERY_END_HOUR=22     last slot ends at 10 pm
+SLOT_LEAD_MINUTES=60     a slot must start at least this many minutes from now
+SLOT_DAYS=7              how many days ahead customers can book
+```
+
+## Thank-you page
+
+After a successful payment the customer is taken to ontherocks.co.in/order?o=…&s=… which shows the thank-you
+message, invoice number, delivery slot, address, items, GST split and total, with buttons to download the invoice
+and to message you on WhatsApp. The link is signed, so nobody can view someone else's order by changing it.

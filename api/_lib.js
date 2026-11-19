@@ -51,6 +51,36 @@ function priceCart(items) {
 }
 
 // Change in Vercel without touching code: FREE_DELIVERY_FROM (default 299), DELIVERY_FEE (default 99).
+// ---------------------------------------------------------------------------
+// Delivery slots (India time). 1-hour slots from DELIVERY_START_HOUR (10 = 10 am) to DELIVERY_END_HOUR
+// (22 = last slot 9–10 pm). The earliest slot must start at least SLOT_LEAD_MINUTES (60) from now,
+// and customers can book up to SLOT_DAYS (7) days ahead. All can be changed in Vercel.
+// ---------------------------------------------------------------------------
+const IST_MS = 5.5 * 3600e3;
+function slotRules() {
+  const n = (k, d, min, max) => { const v = Number(env(k)); return env(k) !== '' && Number.isInteger(v) && v >= min && v <= max ? v : d; };
+  const startHour = n('DELIVERY_START_HOUR', 10, 0, 23);
+  return { startHour, endHour: Math.max(startHour + 1, n('DELIVERY_END_HOUR', 22, 1, 24)), leadMinutes: n('SLOT_LEAD_MINUTES', 60, 0, 1440), days: n('SLOT_DAYS', 7, 1, 30) };
+}
+const hourText = h => { const x = h % 24; return `${x % 12 || 12} ${x < 12 ? 'am' : 'pm'}`; };
+function slotLabel(startMs, hour) {
+  const day = new Date(startMs).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short' });
+  return `${day}, ${hourText(hour)} – ${hourText(hour + 1)}`;
+}
+// slot = { date: 'YYYY-MM-DD', hour: 14 } (India time) → { label, start } or a friendly 400 error.
+function checkSlot(slot) {
+  const r = slotRules();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String((slot && slot.date) || ''));
+  const hour = Number(slot && slot.hour);
+  if (!m || !Number.isInteger(hour)) throw new HttpError(400, 'Please choose a delivery date and time.');
+  if (hour < r.startHour || hour >= r.endHour) throw new HttpError(400, `We deliver between ${hourText(r.startHour)} and ${hourText(r.endHour)}. Please choose another time.`);
+  const start = Date.UTC(+m[1], +m[2] - 1, +m[3], hour) - IST_MS;
+  const now = Date.now();
+  if (start < now + (r.leadMinutes - 5) * 60e3) throw new HttpError(400, 'That delivery time is no longer available. Please choose a later slot.');
+  if (start > now + r.days * 86400e3) throw new HttpError(400, `Please choose a delivery date within the next ${r.days} days.`);
+  return { label: slotLabel(start, hour), start: new Date(start).toISOString() };
+}
+
 function deliveryRules() {
   const n = (k, d) => { const v = Number(env(k)); return env(k) !== '' && Number.isFinite(v) && v >= 0 ? v : d; };
   return { freeFrom: n('FREE_DELIVERY_FROM', 299), fee: n('DELIVERY_FEE', 99) };
@@ -220,6 +250,7 @@ function handler(fn) {
 const istNow = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
 
 module.exports = {
+  slotRules, checkSlot, slotLabel,
   CATALOG, env, HttpError, clean, cleanMultiline, esc, rupees, PHONE_RE, EMAIL_RE,
   priceCart, deliveryRules, checkCustomer, mapLink, deliveryArea, distanceKm, razorpay, validSignature,
   sendEmail, notifyOwner, emailCustomer, emailHtml, handler, istNow,
