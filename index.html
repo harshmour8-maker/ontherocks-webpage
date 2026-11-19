@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="otr-version" content="2026-11-19h">
+<meta name="otr-version" content="2026-11-19i">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -1079,11 +1079,12 @@ function slotDays(){
   }
   return out;
 }
+let SLOTGONE=false;
 function drawSlots(){
   const days=slotDays();
   if(!days.length){$('#slotDays').innerHTML='';$('#slots').innerHTML='';$('#slotHint').textContent='No delivery slots are open right now. Please order on WhatsApp.';return}
   if(!days.find(d=>d.ymd===SLOTDAY))SLOTDAY=days[0].ymd;
-  if(SLOT&&!days.find(d=>d.ymd===SLOT.date&&d.hours.includes(SLOT.hour)))SLOT=null;
+  if(SLOT&&!days.find(d=>d.ymd===SLOT.date&&d.hours.includes(SLOT.hour))){SLOT=null;SLOTGONE=true}
   $('#slotDays').innerHTML=days.map(d=>{const ms=slotStartMs(d.ymd,12);const top=d.rel===0?'Today':d.rel===1?'Tomorrow':dayFmt(ms,{weekday:'short'});
     return `<button type="button" data-day="${d.ymd}" aria-pressed="${d.ymd===SLOTDAY}">${top}<small>${dayFmt(ms,{day:'numeric',month:'short'})}</small></button>`}).join('');
   const day=days.find(d=>d.ymd===SLOTDAY);
@@ -1094,16 +1095,20 @@ function drawSlots(){
 function slotOk(){
   drawSlots();
   if(SLOT)return true;
-  err('Choose a delivery day and time (step 1).');
+  err(SLOTGONE?'Your delivery time has passed. Please choose another slot (step 1).':'Choose a delivery day and time (step 1).');
   $('#stepSlot').classList.add('need');setTimeout(()=>$('#stepSlot').classList.remove('need'),2400);
   $('#stepSlot').scrollIntoView({block:'start',behavior:'smooth'});
   return false;
 }
 $('#slotDays').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(!b)return;SLOTDAY=b.dataset.day;drawSlots()});
 $('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-slot]');if(!b)return;const hh=+b.dataset.slot,ms=slotStartMs(SLOTDAY,hh);
-  SLOT={date:SLOTDAY,hour:hh,label:`${dayFmt(ms,{weekday:'short',day:'numeric',month:'short'})}, ${slotText(hh)}`};drawSlots();if($('#err').textContent.includes('step 1'))err('')});
+  if(!slotDays().some(d=>d.ymd===SLOTDAY&&d.hours.includes(hh))){SLOT=null;drawSlots();err('That time has passed. Please choose another slot.');return}
+  SLOTGONE=false;SLOT={date:SLOTDAY,hour:hh,label:`${dayFmt(ms,{weekday:'short',day:'numeric',month:'short'})}, ${slotText(hh)}`};drawSlots();if($('#err').textContent.includes('step 1'))err('')});
 CONFIG.then(c=>{if(c.slots){SLOTR=c.slots;drawSlots()}if(c.delivery){const f=R(c.delivery.freeFrom);}});
-setInterval(()=>{if(document.body.classList.contains('open'))drawSlots()},60000);
+/* keep the slot list current: past slots disappear even if the phone was asleep or the page came back from history */
+setInterval(drawSlots,30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)drawSlots()});
+addEventListener('pageshow',drawSlots);addEventListener('focus',drawSlots);
 drawSlots();
 render();
 </script>
