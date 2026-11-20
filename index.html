@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="otr-version" content="2026-11-20c">
+<meta name="otr-version" content="2026-11-20d">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -536,6 +536,28 @@ h2{white-space:nowrap}
 .paybar #err:empty{display:none}
 .paybar #place{grid-column:1/-1;justify-self:center}
 .paybar #pay{padding-left:10px;padding-right:10px}
+
+/* v9: artisanal products live in the Store; the Artisanal section previews the catalog */
+.artpanel{margin-top:clamp(36px,5vw,64px);padding:clamp(22px,3.4vw,44px);background:var(--k)}
+.artpanel .ahead{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:clamp(18px,2.6vw,30px)}
+.artpanel .ahead h3{font-size:clamp(26px,3.6vw,44px);font-weight:900;text-transform:uppercase;line-height:1;white-space:nowrap;margin:0}
+.artpanel .ahead p{margin:0;color:#aaa;font-weight:500;font-size:14px}
+.catprev{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.6vw,20px);text-decoration:none;margin-top:8px}
+.catprev img{width:100%;height:auto;display:block;border:1px solid #2a2a2a;transition:transform .35s cubic-bezier(.2,.7,.2,1),border-color .2s}
+.catprev:hover img{border-color:#666}
+.catprev:hover img:nth-child(1){transform:translateY(-6px) rotate(-1deg)}
+.catprev:hover img:nth-child(3){transform:translateY(-6px) rotate(1deg)}
+.catprev:hover img:nth-child(2){transform:translateY(-10px)}
+.catcta{display:flex;gap:12px;flex-wrap:wrap;margin-top:clamp(22px,3vw,36px)}
+.catcta .btn{display:inline-flex;align-items:center;justify-content:center;text-align:center;text-decoration:none}
+.catcta .btn.o{background:transparent;color:var(--w);border-color:var(--w)}
+.catcta .btn.o:hover{background:var(--w);color:var(--k)}
+@media(max-width:700px){
+  .artpanel{margin-left:-18px;margin-right:-18px;padding:24px 18px}
+  .catprev{grid-template-columns:1fr 1fr}.catprev img:nth-child(1){grid-column:1/-1}
+  .catcta .btn{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){.catprev img{transition:none}.catprev:hover img{transform:none!important}}
 </style>
 </head>
 <body>
@@ -585,11 +607,23 @@ h2{white-space:nowrap}
       </div>
     </div>
   </div>
+  <div class="artpanel dark" id="shopArtisanal">
+    <div class="ahead"><h3>Artisanal Ice</h3><p>Crystal Clear. Cut By Hand. Made For The Best Drinks.</p></div>
+    <div class="grid" id="grid"></div>
+  </div>
 </div></section>
 
 <section id="artisanal" class="dark"><div class="wrap">
-  <div class="head"><h2>Artisanal ice</h2><p>Crystal Clear. Cut By Hand. Made For The Best Drinks.</p></div>
-  <div class="grid" id="grid"></div>
+  <div class="head"><h2>Artisanal ice</h2><p>Explore Our Full Catalog Of Hand-Cut Ice.</p></div>
+  <a class="catprev" href="/catalog" target="_blank" rel="noopener" aria-label="Open the artisanal ice catalog in a new tab">
+    <img loading="lazy" src="/catalog-files/thumb-1.jpg" alt="Catalog cover" width="720" height="509">
+    <img loading="lazy" src="/catalog-files/thumb-4.jpg" alt="Main cuts: The Cube and The Hulk" width="720" height="509">
+    <img loading="lazy" src="/catalog-files/thumb-7.jpg" alt="Infused ice" width="720" height="509">
+  </a>
+  <div class="catcta">
+    <a class="btn" href="/catalog" target="_blank" rel="noopener">View Catalog</a>
+    <a class="btn o" href="/catalog-files/OnTheRocks_Catalog.pdf" download="OnTheRocks_Catalog.pdf">Download PDF</a>
+  </div>
 </div></section>
 
 <section id="bulk"><div class="wrap"><div class="bulkgrid"><div class="bulkintro">
@@ -823,7 +857,7 @@ const onScroll=()=>navEl.classList.toggle('scrolled',scrollY>20);addEventListene
 (function(){
   if(!('IntersectionObserver' in window))return;
   document.documentElement.classList.add('js');
-  const groups=[['.claims div',.08],['#store .head p',0],['.hp',0],['#artisanal .head p',0],['#grid .card .b',0],['#artisanal .note',0],['.cities',0],['#quote',0],['.quotebox',0],['footer .cols > div',.1]];
+  const groups=[['.claims div',.08],['#store .head p',0],['.hp',0],['#artisanal .head p',0],['.artpanel .ahead',0],['.catprev',0],['#grid .card .b',0],['#artisanal .note',0],['.cities',0],['#quote',0],['.quotebox',0],['footer .cols > div',.1]];
   const els=[];
   groups.forEach(([sel,step])=>document.querySelectorAll(sel).forEach((el,i)=>{el.classList.add('rv');el.style.setProperty('--d',Math.min(i*step,.6)+'s');els.push(el)}));
   document.querySelectorAll('.pour img').forEach(el=>{el.classList.add('rv-img');els.push(el)});
