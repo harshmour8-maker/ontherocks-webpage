@@ -34,6 +34,24 @@ figure img{width:100%;height:auto;display:block;aspect-ratio:842/595;background:
 .tip{display:none;color:var(--muted);font-size:13px;font-weight:500;margin:0}
 footer{max-width:1240px;margin:0 auto;padding:28px 20px 60px;border-top:1px solid #222;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;color:var(--muted);font-size:14px;font-weight:500}
 footer .acts{margin:0}
+.back{display:inline-flex;align-items:center;gap:4px;color:var(--w);text-decoration:none;font:800 13px var(--f);letter-spacing:.06em;text-transform:uppercase;padding:10px 8px 10px 0;margin-right:4px;white-space:nowrap}
+.back:focus-visible{outline:3px solid var(--w);outline-offset:2px}
+.bar .in{padding-top:max(12px,env(safe-area-inset-top));}
+/* full-screen page viewer */
+.lb{position:fixed;inset:0;z-index:50;background:#000;display:none;flex-direction:column}
+.lb.on{display:flex}
+.lb .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:max(10px,env(safe-area-inset-top)) 14px 10px;border-bottom:1px solid #222}
+.lb .top b{font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.lb button{font:800 13px var(--f);letter-spacing:.06em;text-transform:uppercase;background:var(--w);color:var(--k);border:2px solid var(--w);padding:10px 14px;cursor:pointer;white-space:nowrap}
+.lb button.o{background:transparent;color:var(--w)}
+.lb button:disabled{opacity:.3;cursor:default}
+.lb .view{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;display:flex;align-items:center;touch-action:pan-x pan-y pinch-zoom}
+.lb .view img{display:block;margin:auto;width:min(100%,1600px);height:auto}
+.lb.zoom .view{align-items:flex-start}
+.lb.zoom .view img{width:220%;max-width:none}
+.lb .nav{display:flex;gap:10px;justify-content:space-between;padding:10px 14px max(12px,env(safe-area-inset-bottom));border-top:1px solid #222}
+.lb .nav button{flex:1}
+@media(min-width:900px){.lb.zoom .view img{width:160%}}
 @media(max-width:700px){
   .bar img{height:36px}.bar .btn{padding:10px 12px;font-size:11px}
   header.top{padding:36px 16px 20px}main{padding:4px 12px 28px;gap:12px}
@@ -45,6 +63,7 @@ footer .acts{margin:0}
 </head>
 <body>
 <div class="bar"><div class="in">
+  <a class="back" id="back" href="/#artisanal" aria-label="Back"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Back</span></a>
   <a href="/" aria-label="On The Rocks home"><img src="/catalog-files/logo-white.png" alt="On The Rocks"></a>
   <span class="sp"></span>
   <a class="btn o" href="/#store">Shop Now</a>
@@ -61,15 +80,15 @@ footer .acts{margin:0}
 
 <main>
   <p class="tip">Tap a page to see it full size.</p>
-  <figure><a href="/catalog-files/page-1.jpg" target="_blank" rel="noopener"><img src="/catalog-files/page-1.jpg" alt="On The Rocks – Artisan Ice catalog cover" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-2.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-2.jpg" alt="Welcome to On The Rocks – premier ice solutions" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-3.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-3.jpg" alt="Why clear ice: aesthetic, 100% pure and practical" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-4.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-4.jpg" alt="Main cuts: The Cube (5 cm) and The Hulk (5 × 5 × 7 cm)" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-5.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-5.jpg" alt="Main cuts: The Globe (55 mm) and The Pillar (4 × 4 × 12 cm)" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-6.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-6.jpg" alt="Other cuts: The Diamond, Shot Glasses, The Rose" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-7.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-7.jpg" alt="Infusions: flowers, fruit and herbs frozen into clear ice" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-8.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-8.jpg" alt="Punch block: clear ice centrepieces in any size" width="2000" height="1414"></a></figure>
-  <figure><a href="/catalog-files/page-9.jpg" target="_blank" rel="noopener"><img loading="lazy" src="/catalog-files/page-9.jpg" alt="Contact On The Rocks: +91 60033 68214, info@frostworkscorp.com, @ontherocks.in" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-1.jpg" data-page="1"><img src="/catalog-files/page-1.jpg" alt="On The Rocks – Artisan Ice catalog cover" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-2.jpg" data-page="2"><img loading="lazy" src="/catalog-files/page-2.jpg" alt="Welcome to On The Rocks – premier ice solutions" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-3.jpg" data-page="3"><img loading="lazy" src="/catalog-files/page-3.jpg" alt="Why clear ice: aesthetic, 100% pure and practical" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-4.jpg" data-page="4"><img loading="lazy" src="/catalog-files/page-4.jpg" alt="Main cuts: The Cube (5 cm) and The Hulk (5 × 5 × 7 cm)" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-5.jpg" data-page="5"><img loading="lazy" src="/catalog-files/page-5.jpg" alt="Main cuts: The Globe (55 mm) and The Pillar (4 × 4 × 12 cm)" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-6.jpg" data-page="6"><img loading="lazy" src="/catalog-files/page-6.jpg" alt="Other cuts: The Diamond, Shot Glasses, The Rose" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-7.jpg" data-page="7"><img loading="lazy" src="/catalog-files/page-7.jpg" alt="Infusions: flowers, fruit and herbs frozen into clear ice" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-8.jpg" data-page="8"><img loading="lazy" src="/catalog-files/page-8.jpg" alt="Punch block: clear ice centrepieces in any size" width="2000" height="1414"></a></figure>
+  <figure><a href="/catalog-files/page-9.jpg" data-page="9"><img loading="lazy" src="/catalog-files/page-9.jpg" alt="Contact On The Rocks: +91 60033 68214, info@frostworkscorp.com, @ontherocks.in" width="2000" height="1414"></a></figure>
 </main>
 
 <footer>
@@ -79,5 +98,43 @@ footer .acts{margin:0}
     <a class="btn" href="/#store">Shop Now</a>
   </div>
 </footer>
+
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Catalog page">
+  <div class="top"><b id="lbN">Page 1 of 9</b><div style="display:flex;gap:8px"><button type="button" class="o" id="lbZ">Zoom</button><button type="button" id="lbX">Close</button></div></div>
+  <div class="view" id="lbV"><img id="lbI" alt=""></div>
+  <div class="nav"><button type="button" class="o" id="lbP">Previous</button><button type="button" class="o" id="lbF">Next</button></div>
+</div>
+<script>
+(function(){
+  const app=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  // Back: return to the page we came from on this site, otherwise go to the home page.
+  const back=document.getElementById('back');
+  back.addEventListener('click',e=>{
+    let same=false;try{same=document.referrer&&new URL(document.referrer).origin===location.origin}catch(_){}
+    if(same&&history.length>1){e.preventDefault();history.back()}
+  });
+  // In the home-screen app, the PDF opens in a viewer that can be closed.
+  if(app)document.querySelectorAll('a[href$=".pdf"]').forEach(a=>{a.removeAttribute('download');a.target='_blank';a.rel='noopener'});
+  // Page viewer
+  const figs=[...document.querySelectorAll('a[data-page]')],N=figs.length,lb=document.getElementById('lb'),img=document.getElementById('lbI');
+  let cur=0,open=false;
+  function show(i){cur=(i+N)%N;const a=figs[cur];img.src=a.getAttribute('href');img.alt=a.querySelector('img').alt;
+    document.getElementById('lbN').textContent=`Page ${cur+1} of ${N}`;document.getElementById('lbP').disabled=cur===0;document.getElementById('lbF').disabled=cur===N-1;
+    document.getElementById('lbV').scrollTo(0,0)}
+  function openLb(i){show(i);lb.classList.add('on');document.body.style.overflow='hidden';if(!open){open=true;history.pushState({lb:1},'')};document.getElementById('lbX').focus()}
+  function closeLb(fromPop){if(!open)return;open=false;lb.classList.remove('on','zoom');document.getElementById('lbZ').textContent='Zoom';document.body.style.overflow='';
+    figs[cur].focus({preventScroll:true});if(!fromPop)history.back()}
+  figs.forEach((a,i)=>a.addEventListener('click',e=>{e.preventDefault();openLb(i)}));
+  document.getElementById('lbX').onclick=()=>closeLb(false);
+  document.getElementById('lbP').onclick=()=>show(cur-1);
+  document.getElementById('lbF').onclick=()=>show(cur+1);
+  document.getElementById('lbZ').onclick=e=>{const z=lb.classList.toggle('zoom');e.target.textContent=z?'Fit':'Zoom'};
+  addEventListener('popstate',()=>{if(open)closeLb(true)}); // phone back gesture closes the viewer
+  addEventListener('keydown',e=>{if(!open)return;if(e.key==='Escape')closeLb(false);if(e.key==='ArrowRight')show(cur+1);if(e.key==='ArrowLeft')show(cur-1)});
+  // swipe left/right to change page (when not zoomed)
+  let x0=null;lb.addEventListener('touchstart',e=>{x0=e.touches.length===1?e.touches[0].clientX:null},{passive:true});
+  lb.addEventListener('touchend',e=>{if(x0===null||lb.classList.contains('zoom'))return;const dx=e.changedTouches[0].clientX-x0;if(Math.abs(dx)>60)show(cur+(dx<0?1:-1));x0=null},{passive:true});
+})();
+</script>
 </body>
 </html>
