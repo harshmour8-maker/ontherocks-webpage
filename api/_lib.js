@@ -77,7 +77,7 @@ function checkSlot(slot) {
   const start = Date.UTC(+m[1], +m[2] - 1, +m[3], hour) - IST_MS;
   const now = Date.now();
   if (start < now + (r.leadMinutes - 5) * 60e3) throw new HttpError(400, 'That delivery time is no longer available. Please choose a later slot.');
-  if (start > now + r.days * 86400e3) throw new HttpError(400, `Please choose a delivery date within the next ${r.days} days.`);
+  if (start > now + (r.days + 1) * 86400e3) throw new HttpError(400, `Please choose a delivery date within the next ${r.days} days.`);
   return { label: slotLabel(start, hour), start: new Date(start).toISOString() };
 }
 
@@ -102,17 +102,23 @@ function checkCustomer(c) {
     out.lat = Math.round(lat * 1e6) / 1e6;
     out.lng = Math.round(lng * 1e6) / 1e6;
   }
-  // The delivery spot must be chosen on the map (set REQUIRE_MAP_PIN=no in Vercel to turn this off).
-  if (out.lat === undefined && env('REQUIRE_MAP_PIN', 'yes') !== 'no') {
-    throw new HttpError(400, 'Please select your delivery address on the map.');
-  }
-  if (out.lat !== undefined) {
-    const area = deliveryArea();
-    if (distanceKm(out.lat, out.lng, area.lat, area.lng) > area.km) {
-      throw new HttpError(400, `Sorry, we currently deliver only within ${area.name}. Please choose an address in ${area.name}, or WhatsApp us for other places.`);
-    }
-  }
+  // The delivery spot must be pinned on the map, inside the delivery area. Always required.
+  const area = deliveryArea();
+  const outside = `Sorry, we currently deliver only within ${area.name}. Please choose an address in ${area.name}, or WhatsApp us for other places.`;
+  if (out.lat === undefined) throw new HttpError(400, 'Please select your delivery address on the map.');
+  if (distanceKm(out.lat, out.lng, area.lat, area.lng) > area.km) throw new HttpError(400, outside);
   if (!out.address) throw new HttpError(400, 'Add your flat / house number and a landmark.');
+  // PIN code: must belong to the delivery area (Guwahati PIN codes start with 781).
+  const prefixes = pinPrefixes();
+  const pin = clean(c.pincode, 6).replace(/\D/g, '');
+  if (!/^\d{6}$/.test(pin)) throw new HttpError(400, 'Add your 6-digit PIN code.');
+  if (!prefixes.some(x => pin.startsWith(x))) throw new HttpError(400, outside);
+  // The typed address must not point somewhere else (another PIN code or another city).
+  const text = [out.address, out.city, out.mapAddress, c.landmark].join(' ');
+  const otherPin = (text.match(/\b\d{3}\s?\d{3}\b/g) || []).map(x => x.replace(/\s/, '')).find(x => !prefixes.some(p => x.startsWith(p)));
+  if (otherPin || OTHER_PLACES.test(text)) throw new HttpError(400, outside);
+  if (!out.address.includes(pin)) out.address = `${out.address}, PIN ${pin}`;
+  out.pincode = pin;
   if (!out.city) out.city = '-';
   if (!out.name || !PHONE_RE.test(out.phone)) throw new HttpError(400, 'Add your name and a valid phone number.');
   if (out.email && !EMAIL_RE.test(out.email)) out.email = '';
@@ -121,6 +127,13 @@ function checkCustomer(c) {
 
 // Where we deliver: a circle around a centre point. Change it in Vercel without touching code:
 //   DELIVERY_AREA_NAME (default Guwahati), DELIVERY_LAT / DELIVERY_LNG (centre), DELIVERY_RADIUS_KM (default 20)
+// Clearly-outside places. Kept short on purpose: Guwahati addresses often mention other cities
+// ("GS Road" = Guwahati–Shillong Road, "Delhi Public School"), so those are not listed.
+// The map pin and the 781 PIN code are the real checks; this only catches obvious cases.
+const OTHER_PLACES = /\b(hyderabad|secunderabad|telangana|bengaluru|bangalore|karnataka|chennai|tamil nadu|pune|maharashtra|gurgaon|gurugram|noida|haryana|gujarat|ahmedabad|kerala|kochi|andhra pradesh|visakhapatnam|vijayawada|narsingi|gachibowli|madhapur|kondapur|kukatpally|banjara hills|jubilee hills|hitech city|manikonda|kokapet)\b/i;
+// PIN code prefixes we deliver to (comma-separated in Vercel: DELIVERY_PIN_PREFIXES). Default: 781 = Guwahati.
+function pinPrefixes() { return env('DELIVERY_PIN_PREFIXES', '781').split(',').map(x => x.trim()).filter(Boolean); }
+
 function deliveryArea() {
   const n = (k, d) => { const v = Number(env(k)); return Number.isFinite(v) && env(k) !== '' ? v : d; };
   return { name: env('DELIVERY_AREA_NAME', 'Guwahati'), lat: n('DELIVERY_LAT', 26.1445), lng: n('DELIVERY_LNG', 91.7362), km: n('DELIVERY_RADIUS_KM', 20) };
