@@ -1,5 +1,4 @@
-const LOGO='/img/logo.png',WA='916003368214',
-  CATALOG='https://wa.me/c/916003368214';
+const LOGO='/img/logo.png',WA='916003368214';
 /* ===================== SETTINGS – edit these ===================== */
 const CFG={
   API:'', // leave '' when the site and /api are on the same Vercel project. Otherwise e.g. 'https://ontherocks-api.vercel.app'
@@ -489,7 +488,7 @@ let SLOTGONE=false,SLOTOPEN=true,DAYKEY='',HOURKEY='';
 const dayName=ymd=>dayFmt(slotStartMs(ymd,12),{weekday:'short',day:'numeric',month:'short'});
 function drawSlots(){
   const days=slotDays(),dsel=$('#slotDaySel'),tsel=$('#slotTimeSel');
-  if(!days.length){DAYKEY=HOURKEY='';dsel.innerHTML='';tsel.innerHTML='';dsel.disabled=tsel.disabled=true;$('#slotHint').textContent='No delivery slots are open right now. Please order on WhatsApp.';return}
+  if(!days.length){DAYKEY=HOURKEY='';dsel.innerHTML='';tsel.innerHTML='';dsel.disabled=tsel.disabled=true;$('#slotHint').textContent='No delivery slots are open right now. Please check back soon.';return}
   dsel.disabled=tsel.disabled=false;
   if(SLOT&&!days.some(d=>d.ymd===SLOT.date&&d.hours.includes(SLOT.hour))){SLOT=null;SLOTGONE=true}
   if(!days.some(d=>d.ymd===SLOTDAY))SLOTDAY=SLOT?SLOT.date:days[0].ymd;
@@ -542,21 +541,5 @@ function packCard(){
 }
 packCard();
 
-/* Order on WhatsApp: same checks as paying online (email optional), then WhatsApp opens with the full order typed out. */
-const WA_NUMBER='916003368214';
-function waMessage(c){
-  const items=lineItems().map(x=>{const p=find(x.id);return `• ${p.n} × ${x.qty} = ${R(p.p*x.qty)}`});
-  const t=lineItems().reduce((a,x)=>a+find(x.id).p*x.qty,0),dl=fee(t);
-  return ['Hi On The Rocks, I would like to order:',...items,'',
-    `Items: ${R(t)}`,`Delivery: ${dl?R(dl):'Free'}`,`Total: ${R(t+dl)} (pay on delivery)`,'',
-    `Delivery slot: ${SLOT.label}`,`Address: ${c.address}, PIN ${c.pincode}`,
-    c.mapAddress&&!/^Pinned location/i.test(c.mapAddress)?`Area: ${c.mapAddress}`:'',`Map: https://maps.google.com/?q=${(+c.lat).toFixed(6)},${(+c.lng).toFixed(6)}`,'',
-    `Name: ${c.name}`,`Phone: ${c.phone}`].filter((l,i,a)=>l!==''||a[i-1]!=='').join('\n');
-}
-$('#place').addEventListener('click',e=>{
-  if(!lineItems().length){e.preventDefault();err('Your cart is empty.');return}
-  const c=customer();
-  if(!c){e.preventDefault();return}
-  $('#place').href=`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waMessage(c))}`;
-});
+
 render();
