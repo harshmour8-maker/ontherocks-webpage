@@ -36,6 +36,7 @@ const steps=[
  ['geo','Address lookup works (Geocoding API)'],
  ['auto','Search suggestions work (Places API (New))'],
  ['text','Full search works (Places API (New))'],
+ ['biz','Your Google business is found (for reviews on the home page)'],
 ];
 const L=document.getElementById('list');
 L.innerHTML=steps.map(([k,t])=>`<li id="s-${k}" class="wait"><b><span class="st">…</span>${t}</b></li>`).join('');
@@ -81,6 +82,16 @@ const FIX={
   try{const {places:ps}=await places.Place.searchByText({textQuery:'Shanti Kunj, Kalipur, Guwahati',fields:['displayName','formattedAddress'],region:'in',maxResultCount:3});
     set('text',true,(ps||[]).map(p=>p.formattedAddress).join(' · ')||'Works (nothing found for this test text).')}
   catch(e){set('text',false,'Google says: <code>'+e.message+'</code>',pfix)}
+  try{
+    let p;
+    if(cfg.googlePlaceId){p=new places.Place({id:cfg.googlePlaceId})}
+    else{const r=await places.Place.searchByText({textQuery:cfg.googlePlaceQuery||'On The Rocks ice cubes Guwahati',fields:['id'],region:'in',maxResultCount:1});p=r.places&&r.places[0]}
+    if(!p){set('biz',false,'Google found no business for “'+(cfg.googlePlaceQuery||'')+'”.','In Vercel, add <b>GOOGLE_PLACE_QUERY</b> with your business name and area exactly as on Google Maps (for example “On The Rocks, Kalipur, Guwahati”), Save, then Redeploy.')}
+    else{await p.fetchFields({fields:['displayName','formattedAddress','rating','userRatingCount','reviews']});
+      const ok=!!(p.reviews&&p.reviews.length);
+      set('biz',ok,`<b>${p.displayName}</b>, ${p.formattedAddress||''}<br>Rating ${p.rating||'–'} from ${p.userRatingCount||0} reviews.<br>Place ID: <code>${p.id}</code>`+(cfg.googlePlaceId?'':'<br>If this is your business, add <b>GOOGLE_PLACE_ID</b> = this Place ID in Vercel (then Redeploy) so the right reviews always show.'),
+        'This business has no reviews Google can share yet, or it is the wrong business. If it is the wrong one, set <b>GOOGLE_PLACE_QUERY</b> in Vercel to your exact name and area as on Google Maps, then Redeploy.')}
+  }catch(e){set('biz',false,'Google says: <code>'+e.message+'</code>',pfix)}
   done();
 })();
 function done(){const bad=document.querySelectorAll('li.bad').length,s=document.getElementById('sum');s.hidden=false;

@@ -543,3 +543,38 @@ packCard();
 
 
 render();
+
+/* ---------- Google reviews (home page) ---------- */
+(function(){
+  const sec=document.getElementById('reviews');if(!sec)return;
+  const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const stars=n=>{const r=Math.round(n||0);return '★'.repeat(r)+'☆'.repeat(5-r)};
+  async function load(){
+    try{
+      const cfg=await CONFIG;if(!cfg.googleMapsKey)return;
+      await loadGoogle(cfg.googleMapsKey);
+      const {Place}=await google.maps.importLibrary('places');
+      let place;
+      if(cfg.googlePlaceId)place=new Place({id:cfg.googlePlaceId});
+      else{
+        const {places}=await Place.searchByText({textQuery:cfg.googlePlaceQuery||'On The Rocks ice cubes Guwahati',fields:['id','displayName'],
+          locationBias:{center:{lat:AREA.lat,lng:AREA.lng},radius:30000},region:'in',maxResultCount:5});
+        place=(places||[]).find(p=>/on\s*the\s*rocks/i.test(String(p.displayName||'')));
+        if(!place)return;
+      }
+      await place.fetchFields({fields:['displayName','rating','userRatingCount','reviews','googleMapsURI']});
+      const list=(place.reviews||[]).filter(r=>(r.rating||0)>=4&&String(r.text||'').trim()).slice(0,3);
+      if(!list.length&&!place.rating)return;
+      document.getElementById('rvSum').innerHTML=place.rating?`<span class="rvnum">${(+place.rating).toFixed(1)}</span><span class="rvst" aria-label="${(+place.rating).toFixed(1)} out of 5 stars">${stars(place.rating)}</span><span class="rvcount">${place.userRatingCount||0} Google review${place.userRatingCount===1?'':'s'}</span>`:'';
+      document.getElementById('rvList').innerHTML=list.map(r=>{const a=r.authorAttribution||{};
+        return `<figure class="rvc"><div class="rvst" aria-label="${r.rating} out of 5 stars">${stars(r.rating)}</div><blockquote>${esc(r.text)}</blockquote>
+          <figcaption>${a.photoURI?`<img src="${esc(a.photoURI)}" alt="" width="36" height="36" loading="lazy" referrerpolicy="no-referrer">`:''}<span><a href="${esc(a.uri||place.googleMapsURI)}" target="_blank" rel="noopener">${esc(a.displayName||'Google user')}</a><small>${esc(r.relativePublishTimeDescription||'')}</small></span></figcaption></figure>`}).join('');
+      const all=place.googleMapsURI||`https://www.google.com/maps/place/?q=place_id:${place.id}`;
+      document.getElementById('rvAll').href=all;
+      document.getElementById('rvWrite').href=`https://search.google.com/local/writereview?placeid=${encodeURIComponent(place.id)}`;
+      sec.hidden=false;
+    }catch(e){console.warn('Google reviews unavailable:',e&&e.message)}
+  }
+  if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){io.disconnect();load()}},{rootMargin:'900px 0px'});
+    io.observe(document.getElementById('bulk')||sec)}else load();
+})();
