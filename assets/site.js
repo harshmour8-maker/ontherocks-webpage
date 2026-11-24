@@ -17,18 +17,19 @@ const STORE_SEARCH={
 };
 document.querySelectorAll('a[data-store]').forEach(a=>a.href=CFG.STORES[a.dataset.store]||STORE_SEARCH[a.dataset.store]);
 const P=[
- {id:'cube',n:'The Cube',s:'5 × 5 × 5 cm',p:25,i:'/img/cube.webp'},
- {id:'globe',n:'The Globe',s:'55 mm Sphere',p:40,i:'/img/globe.webp'},
- {id:'pillar',n:'The Pillar',s:'4 × 4 × 12 cm',p:30,i:'/img/pillar.webp'},
+ {id:'cube',n:'The Cube',s:'Pack of 10 · 5 × 5 × 5 cm',p:300,u:'per pack of 10',i:'/img/cube.webp'},
+ {id:'globe',n:'The Globe',s:'Pack of 10 · 55 mm sphere',p:500,u:'per pack of 10',i:'/img/globe.webp'},
+ {id:'pillar',n:'The Pillar',s:'Pack of 10 · 4 × 4 × 12 cm',p:350,u:'per pack of 10',i:'/img/pillar.webp'},
  {id:'diamond',n:'The Diamond',s:'Diamond-Cut Ice',p:50,i:'/img/diamond.webp'},
  {id:'stamp',n:'Branded Ice',s:'Your Logo In The Ice',p:50,i:'/img/stamp.webp'},
  {id:'infused',n:'Infused Ice',s:'Flowers, Fruit, Herbs',p:0,i:'/img/infused.webp'},
  {id:'punch',n:'Punch Block',s:'Any Size You Like',p:0,i:'/img/punch.webp'}
 ];
 const HERO={id:'otr1kg',n:'On The Rocks 1 kg',s:'Premium Ice Cubes',p:80};
-let DELIVERY={freeFrom:299,fee:99},AREA={name:'Guwahati',lat:26.1445,lng:91.7362,km:20};
-/* free from ₹299; below that a flat ₹99 */
+let DELIVERY={freeFrom:500,fee:99,discountAbove:1200,discountPct:10},AREA={name:'Guwahati',lat:26.1445,lng:91.7362,km:20};
+/* free from ₹500; below that a flat ₹99. 10% off the ice on orders above ₹1,200 (same rules as the server) */
 const fee=sub=>sub>0&&sub<DELIVERY.freeFrom?DELIVERY.fee:0;
+const discountFor=sub=>DELIVERY.discountPct>0&&sub>DELIVERY.discountAbove?Math.round(sub*DELIVERY.discountPct/100):0;
 const packsForFree=()=>Math.ceil(DELIVERY.freeFrom/HERO.p);
 let cart={};try{cart=JSON.parse(localStorage.getItem('otrcart')||'{}')}catch(e){}
 /* $ returns a harmless stand-in when a page doesn't have that element, so one script serves every page */
@@ -42,8 +43,8 @@ $('#waL').href=wa('Hi On The Rocks!');
 function save(){try{localStorage.setItem('otrcart',JSON.stringify(cart))}catch(e){}}
 function render(){
   const ids=Object.keys(cart).filter(k=>cart[k]>0&&find(k));let t=0,c=0;
-  $('#items').innerHTML=ids.length?ids.map(k=>{const x=find(k),q=cart[k];t+=x.p*q;c+=q;return `<div class="it"><div><b>${x.n}</b><small>${R(x.p)} each</small>${q>maxQty(k)?`<small class="warn">${maxQty(k)>0?'Only '+maxQty(k)+' left':'Sold out – please remove'}</small>`:''}</div><div class="qty"><button data-c="${k}" data-d="-1" aria-label="Less">−</button><span>${q}</span><button data-c="${k}" data-d="1" aria-label="More">+</button></div></div>`}).join(''):'<p class="empty">Your cart is empty.</p>';
-  const dl=fee(t),gt=t+dl;$('#sub').textContent=R(t);$('#dlv').innerHTML=!ids.length?R(0):dl?R(dl):'<span class="free">FREE</span>';$('#tot').textContent=R(gt);const fh=$('#freeHint');fh.hidden=!ids.length;fh.classList.toggle('got',!dl);if(dl){fh.innerHTML=`<span>Add ${R(DELIVERY.freeFrom-t)} more for free delivery</span><button type="button" id="addFree" data-n="1">Add 1 Pack</button>`}else fh.textContent='🎉 You get free delivery';$('#cc').textContent=c;syncBar(c,gt);const over=ids.some(k=>cart[k]>maxQty(k));$('#place').disabled=$('#pay').disabled=!ids.length||over;$('#pay').textContent=ids.length?'Pay '+R(gt)+' securely':'Pay online';save();syncCards();
+  $('#items').innerHTML=ids.length?ids.map(k=>{const x=find(k),q=cart[k];t+=x.p*q;c+=q;return `<div class="it"><div><b>${x.n}</b><small>${R(x.p)} ${x.u||'each'}</small>${q>maxQty(k)?`<small class="warn">${maxQty(k)>0?'Only '+maxQty(k)+' left':'Sold out – please remove'}</small>`:''}</div><div class="qty"><button data-c="${k}" data-d="-1" aria-label="Less">−</button><span>${q}</span><button data-c="${k}" data-d="1" aria-label="More">+</button></div></div>`}).join(''):'<p class="empty">Your cart is empty.</p>';
+  const dl=fee(t),ds=discountFor(t),gt=t-ds+dl;$('#sub').textContent=R(t);$('#discRow').hidden=!ds;$('#discL').textContent=`Discount ${DELIVERY.discountPct}%`;$('#disc').textContent='−'+R(ds);$('#dlv').innerHTML=!ids.length?R(0):dl?R(dl):'<span class="free">FREE</span>';$('#tot').textContent=R(gt);const fh=$('#freeHint');fh.hidden=!ids.length;fh.classList.toggle('got',!dl);if(dl){fh.innerHTML=`<span>Add ${R(DELIVERY.freeFrom-t)} more for free delivery</span><button type="button" id="addFree" data-n="1">Add 1 Pack</button>`}else if(ds)fh.textContent=`🎉 Free delivery and ${DELIVERY.discountPct}% off`;else if(DELIVERY.discountPct>0)fh.innerHTML=`<span>✓ Free delivery. Add ${R(DELIVERY.discountAbove+1-t)} more for ${DELIVERY.discountPct}% off</span>`;else fh.textContent='🎉 You get free delivery';$('#cc').textContent=c;syncBar(c,gt);const over=ids.some(k=>cart[k]>maxQty(k));$('#place').disabled=$('#pay').disabled=!ids.length||over;$('#pay').textContent=ids.length?'Pay '+R(gt)+' securely':'Pay online';save();syncCards();
 }
 function add(id,q,from){const mx=maxQty(id);if(mx<=0){toast('Sorry, sold out');return}const want=(cart[id]||0)+q;if(want>mx)toast('Only '+mx+' left');cart[id]=Math.min(want,mx);render();if(from)fly(from);const cb=$('#cartBtn');cb.classList.remove('pop');void cb.offsetWidth;cb.classList.add('pop');}
 const open=o=>{document.body.classList.toggle('open',o);if(o)drawSlots();if(o&&lineItems().length&&!PIN&&$('#locPanel').hidden)setTimeout(openMap,350)};

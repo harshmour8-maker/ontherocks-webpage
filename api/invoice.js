@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
   res.status(200).end(invoiceHtml({
     invoiceNo: n.invoice_no, date, orderRef: order.receipt || o, paymentId: n.payment_id,
     buyer: { name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address },
-    b: bill(unpackCart(n.cart), Number(n.delivery || 0)),
+    b: bill(unpackCart(n.cart), Number(n.delivery || 0), Number(n.discount || 0)),
     slot: String(n.slot || '').split('|')[0],
   }));
 };

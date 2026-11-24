@@ -19,6 +19,7 @@ admin.html              the private admin page: ontherocks.co.in/admin
 apple-touch-icon.png    OTR logo used when the site is added to an iPhone home screen
 icon-*.png, favicon.png, manifest.webmanifest   app icons for Android / browsers
 img/                    all website images (product photos, logos, link-preview images og.jpg / og-artisanal.jpg); img/art/ = artisanal cut photos
+map-check.html          open ontherocks.co.in/map-check to test the Google Maps setup step by step
 faq.html, contact.html, delivery.html, refunds.html, privacy.html, terms.html   FAQ, help and policy pages (ontherocks.co.in/refunds etc.)
 shop.html               the shop: ontherocks.co.in/shop (1 kg pack + artisanal ice, with the cart)
 artisanal.html          artisanal ice page built from the catalog: ontherocks.co.in/artisanal (old /catalog links redirect here)
@@ -113,7 +114,8 @@ Your [ORDER] email shows **Flat / landmark**, **Map address** and a **Map pin** 
 - Without it, or if Google fails to load → a free OpenStreetMap backup map, so orders never get stuck.
 
 ## Delivery charge and delivery area
-- Orders **below ₹299** pay **₹99 delivery**; ₹299 and above get **free delivery**. The cart shows Subtotal, Delivery and Total, plus "Add ₹X more for FREE delivery".
+- Orders **below ₹500** pay **₹99 delivery**; ₹500 and above get **free delivery**. Orders **above ₹1,200** get a **flat 10% off** the ice. The cart shows Subtotal, Discount, Delivery and Total, plus "Add ₹X more for free delivery".
+- The Cube, The Globe and The Pillar are sold in packs of 10: ₹300, ₹500 and ₹350. Prices live in `api/_lib.js` (CATALOG) and `assets/site.js` — change both together.
 - Customers can only pick a delivery spot **within 20 km of central Guwahati** (covers the city, Amingaon/North Guwahati and the airport). Search results are limited to that area too.
 - Both are checked again on the server, so they can't be bypassed. Change them any time in Vercel (FREE_DELIVERY_FROM, DELIVERY_FEE, DELIVERY_RADIUS_KM, etc. — see .env.example) and Redeploy.
 
@@ -169,15 +171,9 @@ and to message you on WhatsApp. The link is signed, so nobody can view someone e
 
 ## Delivery fee
 
-Free delivery from FREE_DELIVERY_FROM (default ₹299); below that a flat DELIVERY_FEE (default ₹99).
+Free delivery from FREE_DELIVERY_FROM (default ₹500); below that a flat DELIVERY_FEE (default ₹99). DISCOUNT_PCT (default 10) off the ice on orders above DISCOUNT_ABOVE (default ₹1,200); set DISCOUNT_PCT=0 to switch it off.
 The cart shows "Add ₹X more for free delivery" with a one-tap "Add 1 Pack" button, and the product card offers a
 4-pack (₹320, free delivery). The same rule is used on the website, in the server price check, on invoices and in emails.
-
-## Order on WhatsApp
-
-"Order On WhatsApp Instead" checks the slot, map pin, address, PIN code, name and phone, then opens WhatsApp to
-+91 60033 68214 with the full order typed out (items, total, slot, address, map link, name, phone). No website
-order or email is created; the customer sends the message and pays on delivery.
 
 ## Images
 

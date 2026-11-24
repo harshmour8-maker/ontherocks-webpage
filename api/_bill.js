@@ -29,19 +29,27 @@ function seller() {
 }
 
 // lines: [{ id, name, qty, price }]  (price per unit, GST included)
-function bill(lines, delivery) {
+// discount: rupees off the ice (GST included). It lowers each line's value in proportion, so GST is
+// charged on the discounted price. Delivery has no GST.
+function bill(lines, delivery, discount = 0) {
   const rate = gstRate();
-  const out = lines.map(l => {
-    const incl = r2(l.price * l.qty);
+  const gross = r2(lines.reduce((s, l) => s + r2(l.price * l.qty), 0));
+  const disc = Math.min(r2(discount || 0), gross);
+  let left = r2(gross - disc);
+  const out = lines.map((l, i) => {
+    const full = r2(l.price * l.qty);
+    const incl = i === lines.length - 1 ? left : r2(gross ? full * (gross - disc) / gross : 0);
+    left = r2(left - incl);
     const taxable = r2(incl * 100 / (100 + rate));
-    return { ...l, incl, taxable, gst: r2(incl - taxable) };
+    return { ...l, full, incl, taxable, gst: r2(incl - taxable) };
   });
   const iceIncl = r2(out.reduce((s, l) => s + l.incl, 0));
   const taxable = r2(out.reduce((s, l) => s + l.taxable, 0));
   const gst = r2(iceIncl - taxable);
   const cgst = r2(gst / 2), sgst = r2(gst - cgst);
   const dl = r2(delivery || 0);
-  return { rate, lines: out, iceIncl, taxable, gst, cgst, sgst, delivery: dl, total: r2(iceIncl + dl) };
+  const discountPct = disc && gross ? Math.round(disc / gross * 100) : 0;
+  return { rate, lines: out, gross, discount: disc, discountPct, iceIncl, taxable, gst, cgst, sgst, delivery: dl, total: r2(iceIncl + dl) };
 }
 
 // Indian financial year label for a date, e.g. 26-27 for Apr 2026 – Mar 2027 (IST).
@@ -85,7 +93,8 @@ function invoiceHtml({ invoiceNo, date, orderRef, paymentId, buyer, b, slot }) {
   const s = seller();
   const isTax = !!s.gstin;
   const half = r2(b.rate / 2);
-  const rows = b.lines.map((l, i) => `<tr><td>${i + 1}</td><td>${esc(l.name)}</td><td>${esc(s.hsn)}</td><td class="n">${l.qty}</td>
+  const off = b.discount ? ` <span class="muted">(${b.discountPct}% off)</span>` : '';
+  const rows = b.lines.map((l, i) => `<tr><td>${i + 1}</td><td>${esc(l.name)}${off}</td><td>${esc(s.hsn)}</td><td class="n">${l.qty}</td>
     <td class="n">${money(l.price)}</td><td class="n">${money(l.taxable)}</td><td class="n">${money(l.gst / 2)}</td><td class="n">${money(l.gst - r2(l.gst / 2))}</td><td class="n">${money(l.incl)}</td></tr>`).join('');
   const dRow = `<tr><td>${b.lines.length + 1}</td><td>Delivery charge</td><td>–</td><td class="n">1</td><td class="n">${money(b.delivery)}</td>
     <td class="n">${money(b.delivery)}</td><td class="n">–</td><td class="n">–</td><td class="n">${b.delivery ? money(b.delivery) : 'FREE'}</td></tr>`;
@@ -118,6 +127,7 @@ th{background:#000;color:#fff;font-size:11px;text-transform:uppercase;letter-spa
  <div class="tw"><table class="items"><thead><tr><th>#</th><th>Item</th><th>HSN</th><th class="n">Qty</th><th class="n">Rate (incl. GST)</th><th class="n">Taxable value</th>
   <th class="n">CGST ${half}%</th><th class="n">SGST ${half}%</th><th class="n">Amount</th></tr></thead><tbody>${rows}${dRow}</tbody></table></div>
  <table class="sum">
+  ${b.discount ? `<tr><td>Items total</td><td class="n">${money(b.gross)}</td></tr><tr><td>Discount ${b.discountPct}%</td><td class="n">−${money(b.discount)}</td></tr>` : ''}
   <tr><td>Taxable value (ice)</td><td class="n">${money(b.taxable)}</td></tr>
   <tr><td>CGST @ ${half}%</td><td class="n">${money(b.cgst)}</td></tr>
   <tr><td>SGST @ ${half}%</td><td class="n">${money(b.sgst)}</td></tr>
@@ -137,7 +147,7 @@ function receiptEmailHtml({ intro, invoiceNo, date, orderRef, paymentId, buyer, 
   const half = r2(b.rate / 2);
   const td = 'padding:7px 8px;border-bottom:1px solid #e5e5e5;font-size:13px;vertical-align:top';
   const tdr = td + ';text-align:right;white-space:nowrap';
-  const items = b.lines.map(l => `<tr><td style="${td}">${esc(l.name)}<br><span style="color:#777;font-size:11px">HSN ${esc(s.hsn)} · ${l.qty} × ${money(l.price)} (incl. GST)</span></td>
+  const items = b.lines.map(l => `<tr><td style="${td}">${esc(l.name)}<br><span style="color:#777;font-size:11px">HSN ${esc(s.hsn)} · ${l.qty} × ${money(l.price)} (incl. GST)${b.discount ? ` · ${b.discountPct}% off` : ''}</span></td>
     <td style="${tdr}">${money(l.taxable)}</td><td style="${tdr}">${money(l.gst)}</td><td style="${tdr}"><b>${money(l.incl)}</b></td></tr>`).join('');
   const sumRow = (k, v, strong) => `<tr><td style="padding:5px 0;font-size:${strong ? 17 : 13}px;${strong ? 'font-weight:900;border-top:2px solid #000;padding-top:9px' : ''}">${k}</td>
     <td style="padding:5px 0;text-align:right;font-size:${strong ? 17 : 13}px;${strong ? 'font-weight:900;border-top:2px solid #000;padding-top:9px' : ''}">${v}</td></tr>`;
@@ -163,7 +173,7 @@ function receiptEmailHtml({ intro, invoiceNo, date, orderRef, paymentId, buyer, 
    <tr><td style="${td}">Delivery charge</td><td style="${tdr}">${b.delivery ? money(b.delivery) : '–'}</td><td style="${tdr}">–</td><td style="${tdr}"><b>${b.delivery ? money(b.delivery) : 'FREE'}</b></td></tr>
   </table></td></tr>
 <tr><td style="padding:12px 24px 4px"><table role="presentation" width="100%" style="border-collapse:collapse">
-  ${sumRow('Taxable value (ice)', money(b.taxable))}${sumRow(`CGST @ ${half}%`, money(b.cgst))}${sumRow(`SGST @ ${half}%`, money(b.sgst))}
+  ${b.discount ? sumRow('Items total', money(b.gross)) + sumRow(`Discount ${b.discountPct}%`, '−' + money(b.discount)) : ''}${sumRow('Taxable value (ice)', money(b.taxable))}${sumRow(`CGST @ ${half}%`, money(b.cgst))}${sumRow(`SGST @ ${half}%`, money(b.sgst))}
   ${sumRow('Delivery charge (no GST)', b.delivery ? money(b.delivery) : 'FREE')}${sumRow('Total paid', money(b.total), true)}</table>
   <div style="font-size:12px;font-weight:700;padding:6px 0 0">${esc(inWords(b.total))}</div></td></tr>
 ${link ? `<tr><td style="padding:18px 24px 8px;text-align:center"><a href="${esc(link)}" style="display:inline-block;background:#000;color:#fff;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:13px 22px">View / download invoice (PDF)</a></td></tr>` : ''}

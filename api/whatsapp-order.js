@@ -8,7 +8,7 @@ const { saveOrder } = require('./_orders');
 const { checkCartStock } = require('./_stock');
 
 module.exports = handler(async body => {
-  const { total, delivery, lines } = priceCart(body.items);
+  const { total, delivery, discount, lines } = priceCart(body.items);
   const c = checkCustomer(body.customer);
   const slot = checkSlot(body.slot);
   await checkCartStock(body.items.map(i => ({ id: i.id, qty: Math.floor(Number(i.qty)) })));
@@ -22,7 +22,7 @@ module.exports = handler(async body => {
     ['Map pin', map || 'Not pinned'], ['Time', istNow()],
   ];
 
-  const b = bill(body.items.map(i => ({ id: i.id, name: CATALOG[i.id].n, qty: Math.floor(Number(i.qty)), price: CATALOG[i.id].p })), delivery);
+  const b = bill(body.items.map(i => ({ id: i.id, name: CATALOG[i.id].n, qty: Math.floor(Number(i.qty)), price: CATALOG[i.id].p })), delivery, discount);
   await Promise.all([notifyOwner({
     tag: 'ORDER',
     subject: `New WhatsApp order ${ref} – ${rupees(total)} (NOT PAID) – ${slot.label}`,
@@ -34,7 +34,7 @@ module.exports = handler(async body => {
     name: c.name, phone: c.phone, email: c.email || '-', address: c.address, mapAddress: c.mapAddress || '-', map,
     slot: slot.label, slotStart: slot.start,
     items: b.lines.map(l => ({ name: l.name, qty: l.qty, price: l.price, amount: l.incl })),
-    iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, delivery: b.delivery, total: b.total, invoiceUrl: '',
+    discount: b.discount, iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, delivery: b.delivery, total: b.total, invoiceUrl: '',
   })]);
 
   return { ok: true, ref };

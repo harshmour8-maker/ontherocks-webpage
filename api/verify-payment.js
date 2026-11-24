@@ -36,13 +36,13 @@ module.exports = handler(async (body, req) => {
   if (!(await firstTime('paid:' + orderId))) return { ok: true, ref, invoiceNo, invoiceUrl: link, orderUrl };
 
   const cart = unpackCart(n.cart);
-  const b = bill(cart, Number(n.delivery || 0));
+  const b = bill(cart, Number(n.delivery || 0), Number(n.discount || 0));
   const date = when.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' });
   const buyer = { name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address };
   const receipt = { invoiceNo, date, orderRef: ref, paymentId, buyer, b, link, slot };
   const map = mapLink(n.location);
   const itemsText = b.lines.map(l => `${l.qty} x ${l.name} – ${money(l.incl)}`).join('\n');
-  const billText = `${itemsText}\nDelivery (no GST): ${b.delivery ? money(b.delivery) : 'FREE'}\n` +
+  const billText = `${itemsText}${b.discount ? `\nDiscount ${b.discountPct}%: -${money(b.discount)}` : ''}\nDelivery (no GST): ${b.delivery ? money(b.delivery) : 'FREE'}\n` +
     `Taxable value: ${money(b.taxable)} | CGST: ${money(b.cgst)} | SGST: ${money(b.sgst)}\nTotal paid: ${money(b.total)}`;
 
   // ---- to you: order confirmation + receipt ----
@@ -75,7 +75,7 @@ module.exports = handler(async (body, req) => {
       name: n.name, phone: n.phone, email: n.email, address: n.address, mapAddress: n.map_address, map,
       slot: slot || '', slotStart: slotStart || '',
       items: b.lines.map(l => ({ name: l.name, qty: l.qty, price: l.price, amount: l.incl })),
-      iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, delivery: b.delivery, total: b.total, invoiceUrl: link,
+      discount: b.discount, iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, delivery: b.delivery, total: b.total, invoiceUrl: link,
     }),
   ]);
 

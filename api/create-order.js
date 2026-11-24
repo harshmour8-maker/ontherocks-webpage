@@ -5,7 +5,7 @@ const { handler, HttpError, priceCart, checkCustomer, checkSlot, razorpay, env, 
 const { checkCartStock, packCart } = require('./_stock');
 
 module.exports = handler(async body => {
-  const { total, delivery, lines } = priceCart(body.items);
+  const { total, delivery, discount, lines } = priceCart(body.items);
   const c = checkCustomer(body.customer);
   if (!c.email) throw new HttpError(400, 'Add your email so we can send your receipt.');
   const slot = checkSlot(body.slot);
@@ -20,7 +20,7 @@ module.exports = handler(async body => {
     notes: {
       name: c.name, phone: c.phone, email: c.email || '-', city: c.city,
       address: c.address, map_address: c.mapAddress || '-', items: lines.join('; ').slice(0, 255),
-      cart: packCart(items), delivery: String(delivery), slot: `${slot.label}|${slot.start}`,
+      cart: packCart(items), delivery: String(delivery), discount: String(discount), slot: `${slot.label}|${slot.start}`,
       location: c.lat !== undefined ? `${c.lat},${c.lng}` : '-',
     },
   });

@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
   try { order = await razorpay('orders/' + encodeURIComponent(o)); } catch (e) { return send(404, { error: 'Order not found.' }); }
   const n = order.notes || {};
   if (!n.invoice_no) return send(409, { error: 'We are still confirming this payment.', pending: true });
-  const b = bill(unpackCart(n.cart), Number(n.delivery || 0));
+  const b = bill(unpackCart(n.cart), Number(n.delivery || 0), Number(n.discount || 0));
   send(200, {
     ok: true,
     invoiceNo: n.invoice_no, ref: order.receipt || o, paymentId: n.payment_id || '', paidAt: n.paid_at || '',
@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
     address: n.address, mapAddress: n.map_address !== '-' ? n.map_address : '', map: mapLink(n.location),
     slot: String(n.slot || '').split('|')[0],
     items: b.lines.map(l => ({ name: l.name, qty: l.qty, price: l.price, amount: l.incl })),
-    iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, gstRate: b.rate, delivery: b.delivery, total: b.total,
+    itemsTotal: b.gross, discount: b.discount, discountPct: b.discountPct, iceIncl: b.iceIncl, taxable: b.taxable, cgst: b.cgst, sgst: b.sgst, gstRate: b.rate, delivery: b.delivery, total: b.total,
     invoiceUrl: invoiceUrl(o, siteBase(req)).replace(/^https?:\/\/[^/]+/, ''),
   });
 };

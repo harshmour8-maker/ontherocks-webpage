@@ -8,9 +8,9 @@ const crypto = require('crypto');
 // ---------------------------------------------------------------------------
 const CATALOG = {
   otr1kg:  { n: 'On The Rocks 1 kg', p: 80 },
-  cube:    { n: 'The Cube',          p: 25 },
-  globe:   { n: 'The Globe',         p: 40 },
-  pillar:  { n: 'The Pillar',        p: 30 },
+  cube:    { n: 'The Cube (pack of 10)',   p: 300 },
+  globe:   { n: 'The Globe (pack of 10)',  p: 500 },
+  pillar:  { n: 'The Pillar (pack of 10)', p: 350 },
   diamond: { n: 'The Diamond',       p: 50 },
   stamp:   { n: 'Branded Ice',       p: 50 },
 };
@@ -43,14 +43,18 @@ function priceCart(items) {
     total += prod.p * qty;
     lines.push(`${qty} x ${prod.n} (${rupees(prod.p * qty)})`);
   }
-  // Delivery: free from FREE_DELIVERY_FROM (default ₹299), otherwise a flat DELIVERY_FEE (default ₹99).
+  // Delivery: free from FREE_DELIVERY_FROM (default ₹500), otherwise a flat DELIVERY_FEE (default ₹99).
+  // Discount: DISCOUNT_PCT (default 10%) off the ice on orders above DISCOUNT_ABOVE (default ₹1,200).
   const subtotal = total, d = deliveryRules();
   const delivery = deliveryFee(subtotal, d);
+  const discount = discountFor(subtotal, d);
+  if (discount) lines.push(`Discount ${d.discountPct}% (-${rupees(discount)})`);
   lines.push(delivery ? `Delivery (${rupees(delivery)})` : 'Delivery (FREE)');
-  return { total: subtotal + delivery, subtotal, delivery, lines };
+  return { total: subtotal - discount + delivery, subtotal, discount, delivery, lines };
 }
 
-// Change in Vercel without touching code: FREE_DELIVERY_FROM (default 299), DELIVERY_FEE (default 99).
+// Change in Vercel without touching code: FREE_DELIVERY_FROM (default 500), DELIVERY_FEE (default 99),
+// DISCOUNT_ABOVE (default 1200), DISCOUNT_PCT (default 10, set 0 to switch the discount off).
 // ---------------------------------------------------------------------------
 // Delivery slots (India time). 1-hour slots from DELIVERY_START_HOUR (10 = 10 am) to DELIVERY_END_HOUR
 // (22 = last slot 9–10 pm). The earliest slot must start at least SLOT_LEAD_MINUTES (60) from now,
@@ -87,7 +91,13 @@ function deliveryFee(subtotal, d = deliveryRules()) {
 }
 function deliveryRules() {
   const n = (k, d) => { const v = Number(env(k)); return env(k) !== '' && Number.isFinite(v) && v >= 0 ? v : d; };
-  return { freeFrom: n('FREE_DELIVERY_FROM', 299), fee: n('DELIVERY_FEE', 99) };
+  return { freeFrom: n('FREE_DELIVERY_FROM', 500), fee: n('DELIVERY_FEE', 99),
+    discountAbove: n('DISCOUNT_ABOVE', 1200), discountPct: Math.min(n('DISCOUNT_PCT', 10), 90) };
+}
+// Flat % off the ice on orders strictly above discountAbove, rounded to the rupee.
+function discountFor(subtotal, d = deliveryRules()) {
+  if (!(d.discountPct > 0) || !(subtotal > d.discountAbove)) return 0;
+  return Math.round(subtotal * d.discountPct / 100);
 }
 
 function checkCustomer(c) {
@@ -266,6 +276,6 @@ const istNow = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 module.exports = {
   slotRules, checkSlot, slotLabel,
   CATALOG, env, HttpError, clean, cleanMultiline, esc, rupees, PHONE_RE, EMAIL_RE,
-  priceCart, deliveryRules, deliveryFee, checkCustomer, mapLink, deliveryArea, distanceKm, razorpay, validSignature,
+  priceCart, deliveryRules, deliveryFee, discountFor, checkCustomer, mapLink, deliveryArea, distanceKm, razorpay, validSignature,
   sendEmail, notifyOwner, emailCustomer, emailHtml, handler, istNow,
 };
