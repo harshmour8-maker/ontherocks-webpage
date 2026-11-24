@@ -86,12 +86,11 @@
   <div id="items"></div>
   <form id="co" onsubmit="return false">
     <section class="step" id="stepSlot" aria-labelledby="s1h"><h3 id="s1h"><span class="num">1</span>Delivery Slot</h3>
-      <div id="slotPick">
-        <div class="days" id="slotDays" role="group" aria-label="Delivery day"></div>
-        <div class="slots" id="slots" role="group" aria-label="Delivery time"></div>
-        <p class="hint" id="slotHint">Choose a 1-hour window. We deliver within it.</p>
+      <div class="slotsel">
+        <label class="sfl"><span>Day</span><select id="slotDaySel"></select></label>
+        <label class="sfl"><span>Time</span><select id="slotTimeSel"><option value="">Select a time</option></select></label>
       </div>
-      <div class="chosen" id="slotDone" hidden>🕒 <span id="slotTxt"></span><button type="button" id="slotEdit">Change</button></div>
+      <p class="hint" id="slotHint">Choose a 1-hour window. We deliver within it.</p>
     </section>
     <section class="step" id="stepAddr" aria-labelledby="s2h"><h3 id="s2h"><span class="num">2</span>Delivery Address</h3>
       <input id="ct" type="hidden">

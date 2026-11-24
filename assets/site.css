@@ -843,3 +843,57 @@ body.hasbar #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .heropic img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 45%;display:block;box-shadow:0 24px 48px rgba(30,31,34,.22)}
 .sact{margin-top:clamp(22px,3vw,32px)}
 @media(max-width:800px){.heropic{justify-self:stretch;max-width:none;order:-1}.heropic img{aspect-ratio:16/10;object-position:center 50%}}
+
+/* ---------- v16: cleaner cart ---------- */
+#cart{background:var(--w);box-shadow:-20px 0 60px rgba(30,31,34,.18)}
+#cart header{border-bottom:1px solid var(--rule);padding:16px 22px}
+#cart h2{font-size:20px;letter-spacing:.01em;font-weight:900}
+#cart .x{font-size:28px;color:var(--muted);width:40px;height:40px;display:grid;place-items:center}
+#cart .x:hover{color:var(--k)}
+#items{padding:6px 22px 4px}
+.it{padding:14px 0;border-bottom:1px solid var(--rule)}
+.it:last-child{border-bottom:0}
+.it b{font-size:15px;font-weight:800}
+.it small{font-size:13px;color:var(--muted)}
+.it .qty{border:1px solid #c9cbce;height:36px;align-items:center}
+.it .qty button{width:34px;height:34px;font-size:18px}
+.it .qty span{min-width:30px;font-size:15px}
+#co{background:var(--mist);padding:6px 22px 0!important;gap:0}
+.step{border-top:0!important;padding:18px 0 16px;gap:10px;border-bottom:1px solid var(--rule)}
+.step h3{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;gap:10px}
+.step .num{width:24px;height:24px;border:0;border-radius:50%;background:#d9dadc;color:var(--k);font-size:12px}
+.step.done .num{background:var(--k);color:var(--w)}
+#co input,#co select,#co textarea{border:1px solid #c9cbce;background:var(--w);font-weight:500;padding:12px 14px}
+#co input:focus,#co select:focus,#co textarea:focus{outline:none;border-color:var(--k);box-shadow:0 0 0 1px var(--k)}
+#co input::placeholder,#co textarea::placeholder{color:#8a8c90}
+#co #pc{max-width:none}
+.slotsel{display:grid;grid-template-columns:1.15fr 1fr;gap:10px}
+.sfl{display:grid;gap:5px;margin:0}
+.sfl span{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+#co .sfl select{-webkit-appearance:none;appearance:none;padding-right:34px;cursor:pointer;font-weight:600;
+  background-image:linear-gradient(45deg,transparent 50%,var(--k) 50%),linear-gradient(135deg,var(--k) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.hint{margin:0;font-size:13px}
+.step.done .hint{color:var(--k);font-weight:600}
+.areanote{font-size:13px;color:var(--muted);margin:0}
+.locbtn{border:1px dashed #9a9ca0;background:var(--w);font-size:14px}
+#locDone{border:1px solid var(--rule);background:var(--w)}
+.summary{border-top:0!important;padding:16px 0 14px;gap:8px}
+.sumrow{font-size:14px;font-weight:600;color:#45474b}
+.sumrow span:last-child{color:var(--k);font-weight:700}
+.freehint{border-left:0;background:var(--w);border:1px solid var(--rule);font-size:13px;padding:8px 8px 8px 12px}
+.freehint.got{border-color:#bfe3cb}
+#addFree{padding:8px 12px;font-size:11px}
+.pn{font-size:12px;color:var(--muted);margin:0}
+.paybar{margin:0 -22px!important;padding:12px 22px calc(12px + env(safe-area-inset-bottom,0px))!important;border-top:1px solid var(--rule)!important;box-shadow:0 -8px 24px rgba(30,31,34,.06)!important;row-gap:6px!important}
+.paybar #pay{padding-top:15px;padding-bottom:15px}
+.paybar #place{font-size:13px;padding:2px}
+.paybar .assure{font-size:11px;line-height:1.4}
+@media(max-width:700px){#cart header,#items{padding-left:18px;padding-right:18px}#co{padding:6px 18px 0!important}.paybar{margin:0 -18px!important;padding-left:18px!important;padding-right:18px!important}}
+@media(max-width:360px){.slotsel{grid-template-columns:1fr}}
+#co #oq{border:1px solid #c9cbce!important;border-bottom:0!important}
+.mapwrap{border:1px solid #c9cbce}
+.mapctl button,#locMe{border:1px solid #9a9ca0;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+#locOk{width:100%;text-align:center}
+#co .sfl select{font-size:15px;padding-left:12px}
+@media(max-width:480px){.slotsel{grid-template-columns:1fr}}

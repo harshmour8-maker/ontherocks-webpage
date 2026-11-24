@@ -66,10 +66,10 @@
 <section class="cuts" id="cuts"><div class="wrap">
   <div class="shead"><h2>Main cuts</h2><p>The shape and size of your ice change how a drink tastes and looks. These are the cuts every bar should stock.</p></div>
   <div class="cgrid">
-    <article class="cut nobuy"><div class="cpic"><img src="/img/art/cube.webp" alt="Clear 5 cm ice cube" loading="lazy"></div><div class="cbody"><h3>The Cube</h3><p class="csize">5 × 5 × 5 cm</p><p>A perfect partner for a top-shelf bottle, a classic Old Fashioned and, honestly, just about everything.</p><div class="cfoot"><span class="cprice">₹25<small> each</small></span></div></div></article>
-    <article class="cut nobuy"><div class="cpic"><img src="/img/art/hulk.webp" alt="Tall clear ice block held in tongs" loading="lazy"></div><div class="cbody"><h3>The Hulk</h3><p class="csize">7 × 5 × 5 cm</p><p>Taller and slimmer, so it fits snugly in short tumblers and smaller glasses.</p><div class="cfoot"><span class="cprice req">Made to order</span></div></div></article>
-    <article class="cut nobuy"><div class="cpic"><img src="/img/art/globe.webp" alt="Clear ice sphere on slate" loading="lazy"></div><div class="cbody"><h3>The Globe</h3><p class="csize">55 mm (65 mm on request)</p><p>Its round shape has the least surface for its size, so it melts the slowest. Ideal for straight spirits and spirit-forward cocktails.</p><div class="cfoot"><span class="cprice">₹40<small> each</small></span></div></div></article>
-    <article class="cut nobuy"><div class="cpic"><img src="/img/art/pillar.webp" alt="Tall clear ice pillar" loading="lazy"></div><div class="cbody"><h3>The Pillar</h3><p class="csize">4 × 4 × 12 cm</p><p>Long and elegant, it keeps a highball cold from top to bottom.</p><div class="cfoot"><span class="cprice">₹30<small> each</small></span></div></div></article>
+    <article class="cut nofoot"><div class="cpic"><img src="/img/art/cube.webp" alt="Clear 5 cm ice cube" loading="lazy"></div><div class="cbody"><h3>The Cube</h3><p class="csize">5 × 5 × 5 cm</p><p>A perfect partner for a top-shelf bottle, a classic Old Fashioned and, honestly, just about everything.</p></div></article>
+    <article class="cut nofoot"><div class="cpic"><img src="/img/art/hulk.webp" alt="Tall clear ice block held in tongs" loading="lazy"></div><div class="cbody"><h3>The Hulk</h3><p class="csize">7 × 5 × 5 cm</p><p>Taller and slimmer, so it fits snugly in short tumblers and smaller glasses.</p></div></article>
+    <article class="cut nofoot"><div class="cpic"><img src="/img/art/globe.webp" alt="Clear ice sphere on slate" loading="lazy"></div><div class="cbody"><h3>The Globe</h3><p class="csize">55 mm (65 mm on request)</p><p>Its round shape has the least surface for its size, so it melts the slowest. Ideal for straight spirits and spirit-forward cocktails.</p></div></article>
+    <article class="cut nofoot"><div class="cpic"><img src="/img/art/pillar.webp" alt="Tall clear ice pillar" loading="lazy"></div><div class="cbody"><h3>The Pillar</h3><p class="csize">4 × 4 × 12 cm</p><p>Long and elegant, it keeps a highball cold from top to bottom.</p></div></article>
   </div>
   <div class="acts sact"><a class="btn" href="/shop#cuts">Order in the shop</a></div>
 </div></section>
@@ -143,12 +143,11 @@
   <div id="items"></div>
   <form id="co" onsubmit="return false">
     <section class="step" id="stepSlot" aria-labelledby="s1h"><h3 id="s1h"><span class="num">1</span>Delivery Slot</h3>
-      <div id="slotPick">
-        <div class="days" id="slotDays" role="group" aria-label="Delivery day"></div>
-        <div class="slots" id="slots" role="group" aria-label="Delivery time"></div>
-        <p class="hint" id="slotHint">Choose a 1-hour window. We deliver within it.</p>
+      <div class="slotsel">
+        <label class="sfl"><span>Day</span><select id="slotDaySel"></select></label>
+        <label class="sfl"><span>Time</span><select id="slotTimeSel"><option value="">Select a time</option></select></label>
       </div>
-      <div class="chosen" id="slotDone" hidden>🕒 <span id="slotTxt"></span><button type="button" id="slotEdit">Change</button></div>
+      <p class="hint" id="slotHint">Choose a 1-hour window. We deliver within it.</p>
     </section>
     <section class="step" id="stepAddr" aria-labelledby="s2h"><h3 id="s2h"><span class="num">2</span>Delivery Address</h3>
       <input id="ct" type="hidden">

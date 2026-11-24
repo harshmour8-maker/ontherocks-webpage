@@ -244,25 +244,13 @@ function loadGoogle(key){
 }
 async function useGoogleMap(c,key){
   await loadGoogle(key);
-  const [{Map},{PlaceAutocompleteElement},{Geocoder}]=await Promise.all([google.maps.importLibrary('maps'),google.maps.importLibrary('places'),google.maps.importLibrary('geocoding')]);
+  const [{Map},PLACES,{Geocoder}]=await Promise.all([google.maps.importLibrary('maps'),google.maps.importLibrary('places'),google.maps.importLibrary('geocoding')]);
   if(!GM){
-    $('#map').hidden=true;$('#gmap').hidden=false;$('#gsearch').hidden=false;$('#osearch').hidden=true;
+    $('#map').hidden=true;$('#gmap').hidden=false;$('#gsearch').hidden=true;$('#osearch').hidden=false;
     const map=new Map($('#gmap'),{center:c,zoom:PIN?18:12,disableDefaultUI:true,zoomControl:true,gestureHandling:'greedy',clickableIcons:false});
-    const pac=new PlaceAutocompleteElement({includedRegionCodes:['in']});
-    {const dy=AREA.km/111,dx=AREA.km/(111*Math.cos(AREA.lat*Math.PI/180));try{pac.locationRestriction={north:AREA.lat+dy,south:AREA.lat-dy,east:AREA.lng+dx,west:AREA.lng-dx}}catch(e){}}
-    pac.placeholder='Search your area, building or street';
-    $('#gsearch').appendChild(pac);
-    pac.addEventListener('gmp-select',async({placePrediction})=>{
-      const place=placePrediction.toPlace();
-      await place.fetchFields({fields:['formattedAddress','location','addressComponents']});
-      if(!place.location)return;
-      map.setCenter(place.location);map.setZoom(18);
-      GM.last={lat:place.location.lat(),lng:place.location.lng(),address:place.formattedAddress,city:cityFrom(place.addressComponents)};
-      hint('Now drag the map so the pin sits exactly on your gate or building, then confirm.');
-    });
     map.addListener('dragstart',()=>$('#mapwrap').classList.add('drag'));
     map.addListener('dragend',()=>$('#mapwrap').classList.remove('drag'));
-    GM={map,geocoder:new Geocoder(),last:null};
+    GM={map,geocoder:new Geocoder(),last:null,places:PLACES,token:null};
   }else{GM.map.setCenter(c);if(PIN)GM.map.setZoom(18)}
   LOC.engine='google';
   hint('Search your area above, or tap "Use my location". Then drag the map so the pin is on your gate.');
@@ -302,32 +290,102 @@ function oParts(p){
 }
 const ex=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function oShow(html){const u=$('#ores');u.innerHTML=html;u.hidden=!html}
-async function oSearch(q){
-  if(oCtl)oCtl.abort();oCtl=new AbortController();
-  const c=MAP.center();
+const AREAWORDS=/\b(guwahati|assam|india|kamrup|metro|781\d{3})\b/gi;
+function box(){const dy=AREA.km/111,dx=AREA.km/(111*Math.cos(AREA.lat*Math.PI/180));return{north:AREA.lat+dy,south:AREA.lat-dy,east:AREA.lng+dx,west:AREA.lng-dx}}
+async function gFind(q){ // Google Places suggestions (needs "Places API (New)" on the key)
+  if(LOC.engine!=='google'||!GM||!GM.places||!GM.places.AutocompleteSuggestion)return[];
   try{
-    const dy=AREA.km/111,dx=AREA.km/(111*Math.cos(AREA.lat*Math.PI/180));
-    const r=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=10&lang=en&lat=${AREA.lat}&lon=${AREA.lng}&bbox=${(AREA.lng-dx).toFixed(3)},${(AREA.lat-dy).toFixed(3)},${(AREA.lng+dx).toFixed(3)},${(AREA.lat+dy).toFixed(3)}`,{signal:oCtl.signal});
-    const j=await r.json();
-    oHits=(j.features||[]).filter(f=>f.geometry&&(!f.properties.countrycode||f.properties.countrycode==='IN')).slice(0,6);oSel=-1;
-    oShow(oHits.length?oHits.map((f,i)=>{const ps=oParts(f.properties);return `<li role="option" data-i="${i}"><b>${ex(ps[0])}</b><small>${ex(ps.slice(1).join(', '))}</small></li>`}).join('')
-      :'<li class="msg">No matches. Try a nearby landmark or area name, or drag the map.</li>');
+    if(!GM.token)GM.token=new GM.places.AutocompleteSessionToken();
+    const {suggestions}=await GM.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({input:q,includedRegionCodes:['in'],locationRestriction:box(),sessionToken:GM.token});
+    return (suggestions||[]).filter(s=>s.placePrediction).slice(0,6).map(s=>{const p=s.placePrediction;return{src:'g',pred:p,title:String(p.mainText||p.text),sub:String(p.secondaryText||'')}});
+  }catch(e){console.warn('Google search unavailable:',e.message);return[]}
+}
+const kmFrom=(lat,lng)=>kmTo(AREA,{lat,lng});
+function gHit(pl){ // Google Place → our result
+  const loc=pl.location;if(!loc)return null;const lat=loc.lat(),lng=loc.lng();if(kmFrom(lat,lng)>AREA.km+2)return null;
+  const comps=pl.addressComponents||[],pc=comps.find(x=>(x.types||[]).includes('postal_code'));
+  const name=String(pl.displayName||'').trim(),addr=pl.formattedAddress||'';
+  return{src:'gp',lat,lng,title:name||addr.split(',')[0],sub:addr,address:name&&!addr.startsWith(name)?name+', '+addr:addr,city:cityFrom(comps),pin:pc?(pc.longText||pc.long_name||''):''};
+}
+async function gText(q){ // Google text search – finds buildings the way the Google Maps app does
+  if(LOC.engine!=='google'||!GM||!GM.places||!GM.places.Place||!GM.places.Place.searchByText)return[];
+  try{
+    const tq=/guwahati/i.test(q)?q:q+', Guwahati';
+    const {places}=await GM.places.Place.searchByText({textQuery:tq,fields:['displayName','formattedAddress','location','addressComponents'],
+      locationBias:{center:{lat:AREA.lat,lng:AREA.lng},radius:Math.min(50000,AREA.km*1000)},region:'in',maxResultCount:6});
+    return (places||[]).map(gHit).filter(Boolean);
+  }catch(e){console.warn('Google text search unavailable:',e.message);return[]}
+}
+async function gGeo(q){ // Google geocoder – street addresses and named buildings
+  if(LOC.engine!=='google'||!GM||!GM.geocoder)return[];
+  try{
+    const b=box(),tq=/guwahati/i.test(q)?q:q+', Guwahati, Assam';
+    const {results}=await GM.geocoder.geocode({address:tq,region:'in',bounds:{north:b.north,south:b.south,east:b.east,west:b.west},componentRestrictions:{country:'IN'}});
+    return (results||[]).filter(r=>!(r.types||[]).some(t=>['locality','administrative_area_level_1','administrative_area_level_2','administrative_area_level_3','country'].includes(t))).map(r=>{
+      const lat=r.geometry.location.lat(),lng=r.geometry.location.lng();if(kmFrom(lat,lng)>AREA.km+2)return null;
+      const pc=(r.address_components||[]).find(x=>(x.types||[]).includes('postal_code'));
+      return{src:'gp',lat,lng,title:r.formatted_address.split(',')[0],sub:r.formatted_address.split(',').slice(1).join(',').trim(),address:r.formatted_address,city:cityFrom(r.address_components),pin:pc?pc.long_name:''}}).filter(Boolean);
+  }catch(e){return[]}
+}
+async function photon(q,signal){
+  const b=box();
+  const r=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8&lang=en&lat=${AREA.lat}&lon=${AREA.lng}&bbox=${b.west.toFixed(3)},${b.south.toFixed(3)},${b.east.toFixed(3)},${b.north.toFixed(3)}`,{signal});
+  const j=await r.json();
+  return (j.features||[]).filter(f=>f.geometry&&(!f.properties.countrycode||f.properties.countrycode==='IN')).map(f=>{const ps=oParts(f.properties),[lng,lat]=f.geometry.coordinates;
+    return{src:'o',lat,lng,title:ps[0],sub:ps.slice(1).join(', '),address:ps.join(', '),city:[f.properties.city||f.properties.county,f.properties.state].filter(Boolean).join(', '),pin:f.properties.postcode||''}});
+}
+async function nomi(q,signal){
+  const b=box();
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&countrycodes=in&bounded=1&viewbox=${b.west.toFixed(3)},${b.north.toFixed(3)},${b.east.toFixed(3)},${b.south.toFixed(3)}&q=${encodeURIComponent(q)}`,{signal,headers:{'Accept-Language':'en'}});
+  const j=await r.json();
+  return (j||[]).map(g=>{const a=g.address||{},parts=String(g.display_name||'').split(', ');
+    return{src:'o',lat:+g.lat,lng:+g.lon,title:g.name||parts[0],sub:parts.slice(g.name?1:1).join(', '),address:g.display_name,city:[a.city||a.town||a.village||a.county,a.state].filter(Boolean).join(', '),pin:a.postcode||''}});
+}
+async function osmFind(q,signal){
+  let hits=[];
+  try{hits=await photon(q,signal)}catch(e){if(e.name==='AbortError')throw e}
+  if(!hits.length){try{hits=await nomi(q,signal)}catch(e){if(e.name==='AbortError')throw e}}
+  const seen=new Set();return hits.filter(h=>{const k=h.lat.toFixed(4)+','+h.lng.toFixed(4);if(seen.has(k))return false;seen.add(k);return true}).slice(0,6);
+}
+async function oSearch(q){
+  if(oCtl)oCtl.abort();oCtl=new AbortController();const signal=oCtl.signal;
+  try{
+    let hits=await gFind(q),note='';
+    if(!hits.length)hits=await gText(q);
+    if(!hits.length)hits=await gGeo(q);
+    if(!hits.length)hits=await osmFind(q,signal);
+    if(signal.aborted)return;
+    if(!hits.length){ // building not on the map: try the area name (drop words from the front: "shanti kunj kalipur" → "kalipur")
+      const words=q.replace(AREAWORDS,' ').replace(/[,]/g,' ').split(/\s+/).filter(Boolean);
+      for(let n=1;n<words.length&&!hits.length;n++){const sub=words.slice(n).join(' ');hits=await gFind(sub);if(!hits.length)hits=await osmFind(sub,signal);
+        if(hits.length)note=`“${ex(words.slice(0,n).join(' '))}” isn't on the map yet. Pick the area, then drag the pin onto your building.`}
+    }
+    oHits=hits;oSel=-1;
+    oShow((note?`<li class="msg">${note}</li>`:'')+(hits.length?hits.map((h,i)=>`<li role="option" data-i="${i}"><b>${ex(h.title)}</b><small>${ex(h.sub)}</small></li>`).join('')
+      :'<li class="msg">No matches. Try your area or a nearby landmark, or tap “Use my location” and drag the pin.</li>'));
   }catch(e){if(e.name!=='AbortError')oShow('<li class="msg">Search isn’t available right now. Please drag the map or use your location.</li>')}
 }
-function oPick(i){
-  const f=oHits[i];if(!f)return;
-  const [lng,lat]=f.geometry.coordinates,p=f.properties,ps=oParts(p);
-  MAP.set(lat,lng,17);
-  const c=MAP.center();
-  OLAST={lat:c.lat,lng:c.lng,address:ps.join(', '),city:[p.city||p.county,p.state].filter(Boolean).join(', '),pin:p.postcode||''};
-  $('#oq').value=ps[0];oShow('');$('#oq').blur();
+async function oPick(i){
+  const h=oHits[i];if(!h)return;
+  $('#oq').value=h.title;oShow('');$('#oq').blur();
+  if(h.src==='g'){
+    try{const place=h.pred.toPlace();await place.fetchFields({fields:['formattedAddress','location','addressComponents']});GM.token=null;
+      if(!place.location)return;const lat=place.location.lat(),lng=place.location.lng();moveMap(lat,lng);
+      const pc=(place.addressComponents||[]).find(x=>(x.types||[]).includes('postal_code'));
+      GM.last={lat,lng,address:place.formattedAddress,city:cityFrom(place.addressComponents),pin:pc?(pc.longText||pc.long_name||''):''};
+    }catch(e){hint('Could not open that place. Please drag the map to your building.',true);return}
+  }else{
+    moveMap(h.lat,h.lng);const c=mapCenter();
+    const rec={lat:c.lat,lng:c.lng,address:h.address,city:h.city,pin:h.pin};
+    if(LOC.engine==='google')GM.last=rec;else OLAST=rec;
+  }
   hint('Now drag the map so the pin sits exactly on your gate or building, then confirm.');
 }
 $('#oq').addEventListener('input',()=>{clearTimeout(oTimer);const q=$('#oq').value.trim();if(q.length<3){oShow('');return}oTimer=setTimeout(()=>oSearch(q),350)});
 $('#oq').addEventListener('keydown',e=>{
   const lis=[...$('#ores').querySelectorAll('li[data-i]')];
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!lis.length)return;oSel=(oSel+(e.key==='ArrowDown'?1:-1)+lis.length)%lis.length;lis.forEach((l,i)=>l.classList.toggle('on',i===oSel))}
-  else if(e.key==='Enter'){e.preventDefault();if(lis.length)oPick(oSel>=0?oSel:0)}
+  else if(e.key==='Enter'){e.preventDefault();if(lis.length)oPick(oSel>=0?oSel:0);else{const q=$('#oq').value.trim();if(q.length>=2){clearTimeout(oTimer);oSearch(q)}}}
   else if(e.key==='Escape'){e.stopPropagation();oShow('')}
 });
 $('#ores').addEventListener('click',e=>{const li=e.target.closest('li[data-i]');if(li)oPick(+li.dataset.i)});
@@ -430,40 +488,35 @@ function slotDays(){
 let SLOTGONE=false,SLOTOPEN=true,DAYKEY='',HOURKEY='';
 const dayName=ymd=>dayFmt(slotStartMs(ymd,12),{weekday:'short',day:'numeric',month:'short'});
 function drawSlots(){
-  const days=slotDays();
-  if(!days.length){DAYKEY=HOURKEY='';$('#slotDays').innerHTML='';$('#slots').innerHTML='';$('#slotHint').textContent='No delivery slots are open right now. Please order on WhatsApp.';return}
-  if(SLOT&&!days.some(d=>d.ymd===SLOT.date&&d.hours.includes(SLOT.hour))){SLOT=null;SLOTGONE=true;SLOTOPEN=true}
+  const days=slotDays(),dsel=$('#slotDaySel'),tsel=$('#slotTimeSel');
+  if(!days.length){DAYKEY=HOURKEY='';dsel.innerHTML='';tsel.innerHTML='';dsel.disabled=tsel.disabled=true;$('#slotHint').textContent='No delivery slots are open right now. Please order on WhatsApp.';return}
+  dsel.disabled=tsel.disabled=false;
+  if(SLOT&&!days.some(d=>d.ymd===SLOT.date&&d.hours.includes(SLOT.hour))){SLOT=null;SLOTGONE=true}
   if(!days.some(d=>d.ymd===SLOTDAY))SLOTDAY=SLOT?SLOT.date:days[0].ymd;
-  // update in place, so the list never jumps while someone is choosing
   const dk=days.map(d=>d.ymd+d.rel).join();
-  if(dk!==DAYKEY){DAYKEY=dk;$('#slotDays').innerHTML=days.map(d=>{const ms=slotStartMs(d.ymd,12);const top=d.rel===0?'Today':d.rel===1?'Tomorrow':dayFmt(ms,{weekday:'short'});
-    return `<button type="button" data-day="${d.ymd}">${top}<small>${dayFmt(ms,{day:'numeric',month:'short'})}</small></button>`}).join('')}
-  $('#slotDays').querySelectorAll('[data-day]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.day===SLOTDAY));
+  if(dk!==DAYKEY){DAYKEY=dk;dsel.innerHTML=days.map(d=>{const ms=slotStartMs(d.ymd,12);const top=d.rel===0?'Today':d.rel===1?'Tomorrow':dayFmt(ms,{weekday:'long'});
+    return `<option value="${d.ymd}">${top}, ${dayFmt(ms,{day:'numeric',month:'short'})}</option>`}).join('')}
+  dsel.value=SLOTDAY;
   const day=days.find(d=>d.ymd===SLOTDAY),hk=SLOTDAY+':'+day.hours.join();
-  if(hk!==HOURKEY){HOURKEY=hk;$('#slots').innerHTML=day.hours.map(hh=>`<button type="button" data-slot="${hh}">${slotText(hh)}</button>`).join('')}
-  $('#slots').querySelectorAll('[data-slot]').forEach(b=>b.setAttribute('aria-pressed',!!(SLOT&&SLOT.date===SLOTDAY&&SLOT.hour===+b.dataset.slot)));
-  $('#slotHint').textContent=SLOTGONE?'Your earlier time has passed. Please choose another.':`Choose a time on ${dayName(SLOTDAY)}.`;
+  if(hk!==HOURKEY){HOURKEY=hk;tsel.innerHTML='<option value="">Select a time</option>'+day.hours.map(hh=>`<option value="${hh}">${slotText(hh)}</option>`).join('')}
+  tsel.value=SLOT&&SLOT.date===SLOTDAY?String(SLOT.hour):'';
+  $('#slotHint').textContent=SLOTGONE?'Your earlier time has passed. Please choose another.':SLOT?`We'll deliver on ${SLOT.label}.`:'Choose a 1-hour window. We deliver within it.';
   $('#slotHint').classList.toggle('hintbad',SLOTGONE);
-  const show=!!SLOT&&!SLOTOPEN;
-  $('#slotPick').hidden=show;$('#slotDone').hidden=!show;if(SLOT)$('#slotTxt').textContent=SLOT.label;
   $('#stepSlot').classList.toggle('done',!!SLOT);
 }
 function slotOk(){
   drawSlots();
   if(SLOT)return true;
-  SLOTOPEN=true;drawSlots();
   err(SLOTGONE?'Your delivery time has passed. Please choose another slot (step 1).':'Choose a delivery day and time (step 1).');
   $('#stepSlot').classList.add('need');setTimeout(()=>$('#stepSlot').classList.remove('need'),2400);
   $('#stepSlot').scrollIntoView({block:'start',behavior:'smooth'});
   return false;
 }
-$('#slotDays').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(!b)return;
-  SLOTDAY=b.dataset.day;if(SLOT&&SLOT.date!==SLOTDAY)SLOT=null;SLOTGONE=false;drawSlots()});
-$('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-slot]');if(!b)return;const hh=+b.dataset.slot,ms=slotStartMs(SLOTDAY,hh);
+$('#slotDaySel').addEventListener('change',e=>{SLOTDAY=e.target.value;if(SLOT&&SLOT.date!==SLOTDAY)SLOT=null;SLOTGONE=false;drawSlots()});
+$('#slotTimeSel').addEventListener('change',e=>{const v=e.target.value;if(v===''){SLOT=null;drawSlots();return}const hh=+v;
   if(!slotDays().some(d=>d.ymd===SLOTDAY&&d.hours.includes(hh))){SLOT=null;drawSlots();err('That time has passed. Please choose another slot.');return}
-  SLOTGONE=false;SLOTOPEN=false;SLOT={date:SLOTDAY,hour:hh,label:`${dayName(SLOTDAY)}, ${slotText(hh)}`};drawSlots();
+  SLOTGONE=false;SLOT={date:SLOTDAY,hour:hh,label:`${dayName(SLOTDAY)}, ${slotText(hh)}`};drawSlots();
   if($('#err').textContent.includes('step 1'))err('')});
-$('#slotEdit').onclick=()=>{SLOTOPEN=true;if(SLOT)SLOTDAY=SLOT.date;drawSlots()};
 function qbNote(){const h=x=>x===12?'12 pm':x===0||x===24?'12 am':x>12?`${x-12} pm`:`${x} am`;$('#qbNote').textContent=`Delivered across ${AREA.name}, ${h(SLOTR.startHour)}–${h(SLOTR.endHour)}`}
 CONFIG.then(c=>{if(c.slots){SLOTR=c.slots;drawSlots()}if(c.area)AREA=c.area;packCard();qbNote()});
 /* keep the slot list current: past slots disappear even if the phone was asleep or the page came back from history */

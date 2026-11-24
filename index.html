@@ -46,7 +46,7 @@
 <header id="hero"><div class="wrap">
   <div>
     <h1><span class="ln"><span>Why On</span></span><span class="ln"><span>The Rocks?</span></span></h1>
-    <p class="sub brand">On The Rocks is Guwahati's own premium ice, made by Frostworks Corporation. We freeze purified water slowly into crystal-clear, dense ice that has no taste or smell and melts slowly, so your drink stays cold without getting watered down. For home bars, restaurants, hotels and events.</p>
+    <p class="sub brand">On The Rocks is Guwahati's own premium ice. We freeze purified water slowly into crystal-clear, dense ice that has no taste or smell and melts slowly, so your drink stays cold without getting watered down. For home bars, restaurants, hotels and events.</p>
     <div class="qbuy">
       <img src="/img/pack-thumb.webp" alt="On The Rocks 1 kg ice cubes pack" width="64" height="64">
       <div class="qbt"><b>1 kg Pack</b><span id="qbPrice">₹80</span><span class="fee sm" data-fee>+ ₹99 delivery, free on orders of ₹299 or more</span></div>
@@ -139,12 +139,11 @@
   <div id="items"></div>
   <form id="co" onsubmit="return false">
     <section class="step" id="stepSlot" aria-labelledby="s1h"><h3 id="s1h"><span class="num">1</span>Delivery Slot</h3>
-      <div id="slotPick">
-        <div class="days" id="slotDays" role="group" aria-label="Delivery day"></div>
-        <div class="slots" id="slots" role="group" aria-label="Delivery time"></div>
-        <p class="hint" id="slotHint">Choose a 1-hour window. We deliver within it.</p>
+      <div class="slotsel">
+        <label class="sfl"><span>Day</span><select id="slotDaySel"></select></label>
+        <label class="sfl"><span>Time</span><select id="slotTimeSel"><option value="">Select a time</option></select></label>
       </div>
-      <div class="chosen" id="slotDone" hidden>🕒 <span id="slotTxt"></span><button type="button" id="slotEdit">Change</button></div>
+      <p class="hint" id="slotHint">Choose a 1-hour window. We deliver within it.</p>
     </section>
     <section class="step" id="stepAddr" aria-labelledby="s2h"><h3 id="s2h"><span class="num">2</span>Delivery Address</h3>
       <input id="ct" type="hidden">
