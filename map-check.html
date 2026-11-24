@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Google Maps check – On The Rocks</title>
+<style>
+body{margin:0;font:16px/1.55 'Montserrat',system-ui,sans-serif;background:#f4f4f2;color:#1e1f22}
+main{max-width:720px;margin:0 auto;padding:32px 18px 60px}
+h1{font-size:28px;margin:0 0 6px;text-transform:uppercase;letter-spacing:-.01em}
+.sub{color:#696c70;margin:0 0 24px}
+ol{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+li{background:#fff;border:1px solid #e2e2df;padding:14px 16px}
+li b{display:block}
+li .st{font-weight:800;margin-right:6px}
+li.ok .st{color:#1f7a3f}li.bad .st{color:#b00020}li.wait .st{color:#696c70}li.skip{opacity:.55}
+li .fix{margin:8px 0 0;font-size:14px;background:#fff6f6;border-left:3px solid #b00020;padding:8px 10px}
+li .info{margin:6px 0 0;font-size:14px;color:#45474b;word-break:break-word}
+#map{height:220px;margin-top:18px;border:1px solid #e2e2df;background:#dfe6e9}
+.sum{margin:22px 0 0;padding:14px 16px;font-weight:700;border:2px solid #1e1f22;background:#fff}
+</style>
+</head>
+<body><main>
+<h1>Google Maps check</h1>
+<p class="sub">This page tests your Google Maps setup on this website and tells you exactly what to fix. Keep it open for about 15 seconds.</p>
+<ol id="list"></ol>
+<div id="map" hidden></div>
+<p class="sum" id="sum" hidden></p>
+</main>
+<script>
+const steps=[
+ ['key','Key is set in Vercel (GOOGLE_MAPS_KEY)'],
+ ['script','Google Maps loads on this website'],
+ ['auth','Google accepts the key on this website (Maps JavaScript API)'],
+ ['geo','Address lookup works (Geocoding API)'],
+ ['auto','Search suggestions work (Places API (New))'],
+ ['text','Full search works (Places API (New))'],
+];
+const L=document.getElementById('list');
+L.innerHTML=steps.map(([k,t])=>`<li id="s-${k}" class="wait"><b><span class="st">…</span>${t}</b></li>`).join('');
+const errs=[];const ce=console.error.bind(console);console.error=(...a)=>{errs.push(a.join(' '));ce(...a)};
+const cw=console.warn.bind(console);console.warn=(...a)=>{errs.push(a.join(' '));cw(...a)};
+function set(k,ok,info,fix){const li=document.getElementById('s-'+k);li.className=ok===null?'skip':ok?'ok':'bad';
+  li.querySelector('.st').textContent=ok===null?'–':ok?'✓':'✗';
+  if(info)li.insertAdjacentHTML('beforeend',`<p class="info">${info}</p>`);
+  if(fix&&ok===false)li.insertAdjacentHTML('beforeend',`<p class="fix">${fix}</p>`)}
+function skipRest(from){let on=false;for(const [k] of steps){if(k===from)on=true;if(on)set(k,null,'Skipped until the step above is fixed.')}}
+function gErr(){const e=errs.join(' ');const m=e.match(/(RefererNotAllowedMapError|ApiNotActivatedMapError|InvalidKeyMapError|MissingKeyMapError|ExpiredKeyMapError|BillingNotEnabledMapError|ApiTargetBlockedMapError|DeletedApiProjectMapError|OverQuotaMapError)/);return m?m[1]:''}
+const FIX={
+ RefererNotAllowedMapError:`Google Cloud → APIs &amp; Services → Credentials → your key → <b>Website restrictions</b>: add <code>${location.host}/*</code> and <code>*.${location.host.replace(/^www\./,'')}/*</code>, then Save. Wait 5 minutes and reload this page.`,
+ ApiNotActivatedMapError:'Google Cloud → APIs &amp; Services → Library: search <b>Maps JavaScript API</b> and click <b>Enable</b>.',
+ InvalidKeyMapError:'The key in Vercel is wrong. Copy it again from Google Cloud → Credentials, paste it into Vercel → Settings → Environment Variables → GOOGLE_MAPS_KEY, Save, then Redeploy.',
+ BillingNotEnabledMapError:'Google Cloud → Billing: link a billing account to this project (Google gives a free monthly credit).',
+ ApiTargetBlockedMapError:'Google Cloud → Credentials → your key → <b>API restrictions</b>: tick Maps JavaScript API, Geocoding API and Places API (New), then Save.',
+ ExpiredKeyMapError:'The key has expired. Create a new key in Google Cloud and put it in Vercel (GOOGLE_MAPS_KEY), then Redeploy.',
+};
+(async()=>{
+  let cfg={};try{cfg=await (await fetch('/api/config',{cache:'no-store'})).json()}catch(e){}
+  const key=cfg.googleMapsKey;
+  if(!key){set('key',false,'The website received no Google key, so it uses the free map.','Vercel → your project → Settings → Environment Variables: add <b>GOOGLE_MAPS_KEY</b> with your key (it starts with AIza), Save, then go to Deployments → ⋯ → <b>Redeploy</b>. A new variable only works after a redeploy.');skipRest('script');return done()}
+  set('key',true,`Key starts with <code>${key.slice(0,6)}…</code> (${key.length} characters).`);
+  window.gm_authFailure=()=>{errs.push('gm_authFailure')};
+  const loaded=await new Promise(res=>{window.cb=()=>res(true);const s=document.createElement('script');
+    s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&loading=async&region=IN&language=en&callback=cb`;s.onerror=()=>res(false);document.head.appendChild(s);setTimeout(()=>res(false),12000)});
+  if(!loaded){set('script',false,'','The Google Maps script did not load. Check that the key is correct and try another network (some office networks block Google Maps).');skipRest('auth');return done()}
+  set('script',true);
+  const [{Map},places,{Geocoder}]=await Promise.all([google.maps.importLibrary('maps'),google.maps.importLibrary('places'),google.maps.importLibrary('geocoding')]);
+  document.getElementById('map').hidden=false;
+  new Map(document.getElementById('map'),{center:cfg.area?{lat:cfg.area.lat,lng:cfg.area.lng}:{lat:26.1445,lng:91.7362},zoom:13,disableDefaultUI:true});
+  await new Promise(r=>setTimeout(r,4000));
+  const authErr=errs.includes('gm_authFailure')||gErr();
+  if(authErr){const code=gErr();set('auth',false,code?'Google says: <code>'+code+'</code>':'Google rejected the key.',FIX[code]||FIX.RefererNotAllowedMapError);skipRest('geo');return done()}
+  set('auth',true,'The map above should show Guwahati.');
+  try{const {results}=await new Geocoder().geocode({address:'Kalipur, Guwahati, Assam',region:'in'});set('geo',!!(results&&results.length),results&&results[0]?results[0].formatted_address:'No result.','Google Cloud → APIs &amp; Services → Library: enable <b>Geocoding API</b>. If your key has API restrictions, tick it there too.')}
+  catch(e){set('geo',false,'Google says: <code>'+e.message+'</code>','Google Cloud → APIs &amp; Services → Library: enable <b>Geocoding API</b>. If your key has API restrictions, tick Geocoding API there too.')}
+  const pfix='Google Cloud → APIs &amp; Services → Library: search <b>Places API (New)</b> (not the old "Places API") and click <b>Enable</b>. If your key has API restrictions, tick Places API (New) there too. Wait 5 minutes and reload.';
+  try{const {suggestions}=await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({input:'Shanti Kunj Kalipur',includedRegionCodes:['in']});
+    set('auto',true,(suggestions||[]).slice(0,3).map(s=>s.placePrediction?String(s.placePrediction.text):'').filter(Boolean).join(' · ')||'Works (no suggestions for this test text).')}
+  catch(e){set('auto',false,'Google says: <code>'+e.message+'</code>',pfix)}
+  try{const {places:ps}=await places.Place.searchByText({textQuery:'Shanti Kunj, Kalipur, Guwahati',fields:['displayName','formattedAddress'],region:'in',maxResultCount:3});
+    set('text',true,(ps||[]).map(p=>p.formattedAddress).join(' · ')||'Works (nothing found for this test text).')}
+  catch(e){set('text',false,'Google says: <code>'+e.message+'</code>',pfix)}
+  done();
+})();
+function done(){const bad=document.querySelectorAll('li.bad').length,s=document.getElementById('sum');s.hidden=false;
+  s.textContent=bad?`${bad} problem${bad>1?'s':''} found. Fix the red step${bad>1?'s':''} above, then reload this page.`:'All good: the website will use Google Maps and Google search.'}
+</script>
+</body></html>
