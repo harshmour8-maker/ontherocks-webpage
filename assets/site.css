@@ -813,3 +813,33 @@ footer{background:var(--char)}
   .hp .dnote .fee{display:block}
 }
 @media(prefers-reduced-motion:reduce){.agrid img{transition:none}.agrid figure:hover img{transform:none}}
+
+/* ---------- v14: single shop page + floating oval cart ---------- */
+.shopcuts{margin-top:clamp(20px,3vw,32px)}
+.shopmore{margin:28px 0 0;color:var(--muted);font-weight:500}
+.shopmore a{color:var(--k);font-weight:800}
+#cartBtn{display:none!important}
+#mbar{display:flex!important;position:fixed;left:50%;right:auto;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:55;
+  transform:translate(-50%,160%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+  background:var(--k);color:#fff;border-radius:999px;padding:8px 8px 8px 24px;gap:18px;align-items:center;
+  box-shadow:0 14px 34px rgba(30,31,34,.35);white-space:nowrap;width:auto;max-width:calc(100% - 32px)}
+body.hasbar #mbar{transform:translate(-50%,0)}
+body.open #mbar{transform:translate(-50%,160%)}
+#mbar>div{display:flex;align-items:baseline;gap:10px}
+#mbar small{display:inline;font:700 12px var(--f);letter-spacing:.06em;text-transform:uppercase;color:#bdbec1}
+#mbar b{font:900 17px var(--f)}
+#mbar button{font:800 12px var(--f);letter-spacing:.06em;text-transform:uppercase;background:#fff;color:var(--k);border:0;padding:12px 18px;border-radius:999px;cursor:pointer}
+#mbar button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+body.hasbar footer{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+body.hasbar #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+@media(prefers-reduced-motion:reduce){#mbar{transition:none}}
+.shoppage #store{padding-bottom:clamp(64px,8vw,110px)}
+
+/* ---------- v15: Why On The Rocks hero, one action per section ---------- */
+.home #hero h1{font-size:clamp(40px,5.6vw,84px)}
+.home #hero h1 .ln{white-space:nowrap}
+.home #hero p.sub.brand{max-width:46ch;font-size:clamp(16px,1.35vw,19px);font-weight:500;line-height:1.6;color:#45474b}
+.heropic{margin:0;justify-self:end;width:100%;max-width:440px}
+.heropic img{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 45%;display:block;box-shadow:0 24px 48px rgba(30,31,34,.22)}
+.sact{margin-top:clamp(22px,3vw,32px)}
+@media(max-width:800px){.heropic{justify-self:stretch;max-width:none;order:-1}.heropic img{aspect-ratio:16/10;object-position:center 50%}}

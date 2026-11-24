@@ -387,7 +387,7 @@ const calm=matchMedia('(prefers-reduced-motion: reduce)').matches;
 // product photo flies into the cart
 function fly(img){
   if(calm||!img||!img.animate)return;
-  const a=img.getBoundingClientRect(),t=(phone()&&document.body.classList.contains('hasbar')?$('#mbarBtn'):$('#cartBtn')).getBoundingClientRect();
+  const a=img.getBoundingClientRect(),t=$('#mbarBtn').getBoundingClientRect();
   if(!a.width)return;
   const f=img.cloneNode();f.className='flyer';f.removeAttribute('loading');const s=Math.min(a.width,a.height,160);
   Object.assign(f.style,{left:(a.left+a.width/2-s/2)+'px',top:(a.top+a.height/2-s/2)+'px',width:s+'px',height:s+'px'});
