@@ -43,9 +43,10 @@ function priceCart(items) {
     total += prod.p * qty;
     lines.push(`${qty} x ${prod.n} (${rupees(prod.p * qty)})`);
   }
-  // Delivery: free from FREE_DELIVERY_FROM (default ₹299), otherwise DELIVERY_FEE (default ₹99).
+  // Delivery: free from FREE_DELIVERY_FROM (default ₹299). Below that, DELIVERY_FEE (default ₹99) but never
+  // more than what takes the order to ₹299 – so a bigger order never costs less than a smaller one.
   const subtotal = total, d = deliveryRules();
-  const delivery = subtotal < d.freeFrom ? d.fee : 0;
+  const delivery = deliveryFee(subtotal, d);
   lines.push(delivery ? `Delivery (${rupees(delivery)})` : 'Delivery (FREE)');
   return { total: subtotal + delivery, subtotal, delivery, lines };
 }
@@ -81,6 +82,10 @@ function checkSlot(slot) {
   return { label: slotLabel(start, hour), start: new Date(start).toISOString() };
 }
 
+function deliveryFee(subtotal, d = deliveryRules()) {
+  if (!(subtotal > 0) || subtotal >= d.freeFrom) return 0;
+  return Math.min(d.fee, d.freeFrom - subtotal);
+}
 function deliveryRules() {
   const n = (k, d) => { const v = Number(env(k)); return env(k) !== '' && Number.isFinite(v) && v >= 0 ? v : d; };
   return { freeFrom: n('FREE_DELIVERY_FROM', 299), fee: n('DELIVERY_FEE', 99) };
@@ -113,10 +118,11 @@ function checkCustomer(c) {
   const pin = clean(c.pincode, 6).replace(/\D/g, '');
   if (!/^\d{6}$/.test(pin)) throw new HttpError(400, 'Add your 6-digit PIN code.');
   if (!prefixes.some(x => pin.startsWith(x))) throw new HttpError(400, outside);
-  // The typed address must not point somewhere else (another PIN code or another city).
-  const text = [out.address, out.city, out.mapAddress, c.landmark].join(' ');
+  // A different PIN code typed into the address also means it's outside the area.
+  // (No city-name check: Guwahati addresses often mention other cities, e.g. "near Bangalore Bakery".)
+  const text = [out.address, c.landmark].join(' ');
   const otherPin = (text.match(/\b\d{3}\s?\d{3}\b/g) || []).map(x => x.replace(/\s/, '')).find(x => !prefixes.some(p => x.startsWith(p)));
-  if (otherPin || OTHER_PLACES.test(text)) throw new HttpError(400, outside);
+  if (otherPin) throw new HttpError(400, outside);
   if (!out.address.includes(pin)) out.address = `${out.address}, PIN ${pin}`;
   out.pincode = pin;
   if (!out.city) out.city = '-';
@@ -127,10 +133,6 @@ function checkCustomer(c) {
 
 // Where we deliver: a circle around a centre point. Change it in Vercel without touching code:
 //   DELIVERY_AREA_NAME (default Guwahati), DELIVERY_LAT / DELIVERY_LNG (centre), DELIVERY_RADIUS_KM (default 20)
-// Clearly-outside places. Kept short on purpose: Guwahati addresses often mention other cities
-// ("GS Road" = Guwahati–Shillong Road, "Delhi Public School"), so those are not listed.
-// The map pin and the 781 PIN code are the real checks; this only catches obvious cases.
-const OTHER_PLACES = /\b(hyderabad|secunderabad|telangana|bengaluru|bangalore|karnataka|chennai|tamil nadu|pune|maharashtra|gurgaon|gurugram|noida|haryana|gujarat|ahmedabad|kerala|kochi|andhra pradesh|visakhapatnam|vijayawada|narsingi|gachibowli|madhapur|kondapur|kukatpally|banjara hills|jubilee hills|hitech city|manikonda|kokapet)\b/i;
 // PIN code prefixes we deliver to (comma-separated in Vercel: DELIVERY_PIN_PREFIXES). Default: 781 = Guwahati.
 function pinPrefixes() { return env('DELIVERY_PIN_PREFIXES', '781').split(',').map(x => x.trim()).filter(Boolean); }
 
@@ -265,6 +267,6 @@ const istNow = () => new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkat
 module.exports = {
   slotRules, checkSlot, slotLabel,
   CATALOG, env, HttpError, clean, cleanMultiline, esc, rupees, PHONE_RE, EMAIL_RE,
-  priceCart, deliveryRules, checkCustomer, mapLink, deliveryArea, distanceKm, razorpay, validSignature,
+  priceCart, deliveryRules, deliveryFee, checkCustomer, mapLink, deliveryArea, distanceKm, razorpay, validSignature,
   sendEmail, notifyOwner, emailCustomer, emailHtml, handler, istNow,
 };

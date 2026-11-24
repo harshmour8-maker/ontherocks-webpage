@@ -18,6 +18,10 @@ api/admin-orders.js     data for the admin page (password-protected)
 admin.html              the private admin page: ontherocks.co.in/admin
 apple-touch-icon.png    OTR logo used when the site is added to an iPhone home screen
 icon-*.png, favicon.png, manifest.webmanifest   app icons for Android / browsers
+img/                    all website images (product photos, logos, link-preview images og.jpg / og-catalog.jpg)
+faq.html, contact.html, delivery.html, refunds.html, privacy.html, terms.html   FAQ, help and policy pages (ontherocks.co.in/refunds etc.)
+catalog.html            artisanal ice catalog page: ontherocks.co.in/catalog
+catalog-files/          catalog PDF (download) and page images used by catalog.html
 order.html              thank-you page with full order details, shown after a successful payment
 api/order.js            GET /api/order – order details for the thank-you page (private signed link)
 vercel.json             lets /admin open without ".html"
@@ -161,3 +165,20 @@ SLOT_DAYS=7              how many days ahead customers can book
 After a successful payment the customer is taken to ontherocks.co.in/order?o=…&s=… which shows the thank-you
 message, invoice number, delivery slot, address, items, GST split and total, with buttons to download the invoice
 and to message you on WhatsApp. The link is signed, so nobody can view someone else's order by changing it.
+
+## Delivery fee (since 24 Nov 2026)
+
+Free delivery from FREE_DELIVERY_FROM (default ₹299). Below that, DELIVERY_FEE (default ₹99), but never more than
+the amount that brings the order to ₹299 – so 1 pack = ₹179, 2 = ₹259, 3 = ₹299, 4 = ₹320 (free delivery).
+The same rule is used on the website, in the server price check, on invoices and in emails.
+
+## Order on WhatsApp
+
+"Order On WhatsApp Instead" checks the slot, map pin, address, PIN code, name and phone, then opens WhatsApp to
++91 60033 68214 with the full order typed out (items, total, slot, address, map link, name, phone). No website
+order or email is created; the customer sends the message and pays on delivery.
+
+## Images
+
+Images live in /img as separate files (the homepage used to carry them inside index.html). To change a product
+photo, replace the file in /img with one of the same name.
