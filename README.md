@@ -18,10 +18,11 @@ api/admin-orders.js     data for the admin page (password-protected)
 admin.html              the private admin page: ontherocks.co.in/admin
 apple-touch-icon.png    OTR logo used when the site is added to an iPhone home screen
 icon-*.png, favicon.png, manifest.webmanifest   app icons for Android / browsers
-img/                    all website images (product photos, logos, link-preview images og.jpg / og-catalog.jpg)
+img/                    all website images (product photos, logos, link-preview images og.jpg / og-artisanal.jpg); img/art/ = artisanal cut photos
 faq.html, contact.html, delivery.html, refunds.html, privacy.html, terms.html   FAQ, help and policy pages (ontherocks.co.in/refunds etc.)
-catalog.html            artisanal ice catalog page: ontherocks.co.in/catalog
-catalog-files/          catalog PDF (download) and page images used by catalog.html
+shop.html               the shop: ontherocks.co.in/shop (1 kg pack + artisanal ice, with the cart)
+artisanal.html          artisanal ice page built from the catalog: ontherocks.co.in/artisanal (old /catalog links redirect here)
+assets/site.css, assets/site.js   styles and cart/checkout code shared by the home, shop and artisanal pages
 order.html              thank-you page with full order details, shown after a successful payment
 api/order.js            GET /api/order – order details for the thank-you page (private signed link)
 vercel.json             lets /admin open without ".html"
@@ -166,11 +167,11 @@ After a successful payment the customer is taken to ontherocks.co.in/order?o=…
 message, invoice number, delivery slot, address, items, GST split and total, with buttons to download the invoice
 and to message you on WhatsApp. The link is signed, so nobody can view someone else's order by changing it.
 
-## Delivery fee (since 24 Nov 2026)
+## Delivery fee
 
-Free delivery from FREE_DELIVERY_FROM (default ₹299). Below that, DELIVERY_FEE (default ₹99), but never more than
-the amount that brings the order to ₹299 – so 1 pack = ₹179, 2 = ₹259, 3 = ₹299, 4 = ₹320 (free delivery).
-The same rule is used on the website, in the server price check, on invoices and in emails.
+Free delivery from FREE_DELIVERY_FROM (default ₹299); below that a flat DELIVERY_FEE (default ₹99).
+The cart shows "Add ₹X more for free delivery" with a one-tap "Add 1 Pack" button, and the product card offers a
+4-pack (₹320, free delivery). The same rule is used on the website, in the server price check, on invoices and in emails.
 
 ## Order on WhatsApp
 
