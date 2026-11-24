@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="otr-version" content="2026-11-24a">
+<meta name="otr-version" content="2026-11-24b">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -681,7 +681,7 @@ footer .flinks a{font-weight:700}
       <h3>On The Rocks<br>Premium Ice Cubes</h3>
       <p class="tag">1 kg Pack. Pure. Clear. Cold.</p>
       <div class="price">₹80 <small>Incl. All Taxes</small></div>
-      <p class="dnote" id="dnote">Free delivery above ₹299</p>
+      <p class="dnote" id="dnote">Free delivery on orders of ₹299 or more</p>
       <p class="left" id="heroLeft"></p>
       
       <div class="row">
@@ -804,7 +804,7 @@ footer .flinks a{font-weight:700}
       <div id="err" role="alert"></div>
       <button class="btn" id="pay" type="button">Pay online</button>
       <a class="linkbtn" id="place" href="https://wa.me/916003368214" target="_blank" rel="noopener">Order On WhatsApp Instead</a>
-      <p class="assure">Ice arrived melted? We replace it or refund you. <a href="/refunds" target="_blank" rel="noopener">Refund policy</a></p>
+      <p class="assure">Melted on arrival? Free replacement or full refund. <a href="/refunds" target="_blank" rel="noopener">How it works</a></p>
     </div>
   </form>
 </aside>
@@ -840,8 +840,8 @@ const P=[
 ];
 const HERO={id:'otr1kg',n:'On The Rocks 1 kg',s:'Premium Ice Cubes',p:80};
 let DELIVERY={freeFrom:299,fee:99},AREA={name:'Guwahati',lat:26.1445,lng:91.7362,km:20};
-/* free from ₹299; below that ₹99, but never more than what takes the order to ₹299 */
-const fee=sub=>sub>0&&sub<DELIVERY.freeFrom?Math.min(DELIVERY.fee,DELIVERY.freeFrom-sub):0;
+/* free from ₹299; below that a flat ₹99 */
+const fee=sub=>sub>0&&sub<DELIVERY.freeFrom?DELIVERY.fee:0;
 const packsForFree=()=>Math.ceil(DELIVERY.freeFrom/HERO.p);
 let cart={};try{cart=JSON.parse(localStorage.getItem('otrcart')||'{}')}catch(e){}
 const $=s=>document.querySelector(s),R=n=>'₹'+n.toLocaleString('en-IN');
@@ -855,7 +855,7 @@ function save(){try{localStorage.setItem('otrcart',JSON.stringify(cart))}catch(e
 function render(){
   const ids=Object.keys(cart).filter(k=>cart[k]>0&&find(k));let t=0,c=0;
   $('#items').innerHTML=ids.length?ids.map(k=>{const x=find(k),q=cart[k];t+=x.p*q;c+=q;return `<div class="it"><div><b>${x.n}</b><small>${R(x.p)} each</small>${q>maxQty(k)?`<small class="warn">${maxQty(k)>0?'Only '+maxQty(k)+' left':'Sold out – please remove'}</small>`:''}</div><div class="qty"><button data-c="${k}" data-d="-1" aria-label="Less">−</button><span>${q}</span><button data-c="${k}" data-d="1" aria-label="More">+</button></div></div>`}).join(''):'<p class="empty">Your cart is empty.</p>';
-  const dl=fee(t),gt=t+dl;$('#sub').textContent=R(t);$('#dlv').innerHTML=!ids.length?R(0):dl?R(dl):'<span class="free">FREE</span>';$('#tot').textContent=R(gt);const fh=$('#freeHint');fh.hidden=!ids.length;fh.classList.toggle('got',!dl);if(dl){const n=Math.ceil((DELIVERY.freeFrom-t)/HERO.p);fh.innerHTML=`Add ${n} more 1 kg pack${n>1?'s':''} for free delivery <button type="button" id="addFree" data-n="${n}">Add ${n}</button>`}else fh.textContent='🎉 You get free delivery';$('#cc').textContent=c;syncBar(c,gt);const over=ids.some(k=>cart[k]>maxQty(k));$('#place').disabled=$('#pay').disabled=!ids.length||over;$('#pay').textContent=ids.length?'Pay '+R(gt)+' securely':'Pay online';save();syncCards();
+  const dl=fee(t),gt=t+dl;$('#sub').textContent=R(t);$('#dlv').innerHTML=!ids.length?R(0):dl?R(dl):'<span class="free">FREE</span>';$('#tot').textContent=R(gt);const fh=$('#freeHint');fh.hidden=!ids.length;fh.classList.toggle('got',!dl);if(dl){fh.innerHTML=`<span>Add ${R(DELIVERY.freeFrom-t)} more for free delivery</span><button type="button" id="addFree" data-n="1">Add 1 Pack</button>`}else fh.textContent='🎉 You get free delivery';$('#cc').textContent=c;syncBar(c,gt);const over=ids.some(k=>cart[k]>maxQty(k));$('#place').disabled=$('#pay').disabled=!ids.length||over;$('#pay').textContent=ids.length?'Pay '+R(gt)+' securely':'Pay online';save();syncCards();
 }
 function add(id,q,from){const mx=maxQty(id);if(mx<=0){toast('Sorry, sold out');return}const want=(cart[id]||0)+q;if(want>mx)toast('Only '+mx+' left');cart[id]=Math.min(want,mx);render();if(from)fly(from);const cb=$('#cartBtn');cb.classList.remove('pop');void cb.offsetWidth;cb.classList.add('pop');}
 const open=o=>{document.body.classList.toggle('open',o);if(o)drawSlots();if(o&&lineItems().length&&!PIN&&$('#locPanel').hidden)setTimeout(openMap,350)};
@@ -1292,7 +1292,7 @@ drawSlots();
 /* product card: delivery note and the free-delivery pack, from the live delivery rules */
 function packCard(){
   const n=packsForFree();
-  $('#dnote').textContent=`Free delivery above ${R(DELIVERY.freeFrom)}`;
+  $('#dnote').textContent=`Free delivery on orders of ${R(DELIVERY.freeFrom)} or more`;
   $('#packN').textContent=`${n}-Pack`;$('#packP').textContent=R(n*HERO.p);
   $('#addPack').hidden=maxQty(HERO.id)<n||n<2;
   const qb=$('#qbAdd'),out=maxQty(HERO.id)<=0;qb.disabled=out;qb.textContent=out?'Sold out':'Add';$('#qbPrice').textContent=R(HERO.p);

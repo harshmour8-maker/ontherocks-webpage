@@ -43,8 +43,7 @@ function priceCart(items) {
     total += prod.p * qty;
     lines.push(`${qty} x ${prod.n} (${rupees(prod.p * qty)})`);
   }
-  // Delivery: free from FREE_DELIVERY_FROM (default ₹299). Below that, DELIVERY_FEE (default ₹99) but never
-  // more than what takes the order to ₹299 – so a bigger order never costs less than a smaller one.
+  // Delivery: free from FREE_DELIVERY_FROM (default ₹299), otherwise a flat DELIVERY_FEE (default ₹99).
   const subtotal = total, d = deliveryRules();
   const delivery = deliveryFee(subtotal, d);
   lines.push(delivery ? `Delivery (${rupees(delivery)})` : 'Delivery (FREE)');
@@ -84,7 +83,7 @@ function checkSlot(slot) {
 
 function deliveryFee(subtotal, d = deliveryRules()) {
   if (!(subtotal > 0) || subtotal >= d.freeFrom) return 0;
-  return Math.min(d.fee, d.freeFrom - subtotal);
+  return d.fee;
 }
 function deliveryRules() {
   const n = (k, d) => { const v = Number(env(k)); return env(k) !== '' && Number.isFinite(v) && v >= 0 ? v : d; };
