@@ -56,7 +56,7 @@ document.addEventListener('click',e=>{
   if(b.dataset.rm){delete cart[b.dataset.rm];render();toast('Removed from cart');return}
   if(b.id==='addFree'){add(HERO.id,+b.dataset.n);return}
   if(b.id==='addHero'){const n=hq;add(HERO.id,hq,$('.hp .pic img'));hq=1;$('#hq').textContent=1;toast(n>1?n+' × 1 kg packs added':'1 kg pack added')}
-  if(b.dataset.add){add(b.dataset.add,1,(b.closest('.card,.cut')||document).querySelector('.im img,.cpic img'));toast('Added '+find(b.dataset.add).n);const s=document.querySelector(`.ctl[data-ctl="${b.dataset.add}"] button[data-d="1"]`);if(s)s.focus({preventScroll:true})}
+  if(b.dataset.add){add(b.dataset.add,1,(b.closest('.card,.cut,.hp')||document).querySelector('.im img,.cpic img,.pic img'));toast('Added '+find(b.dataset.add).n);const s=document.querySelector(`.ctl[data-ctl="${b.dataset.add}"] button[data-d="1"]`);if(s)s.focus({preventScroll:true})}
   if(b.dataset.c){const k=b.dataset.c,n=Math.max(0,cart[k]+ +b.dataset.d);if(n>maxQty(k))toast('Only '+maxQty(k)+' left');cart[k]=Math.min(n,maxQty(k));render()}
   if(b.id==='cartBtn')open(true);
   if(b.id==='cx')open(false);

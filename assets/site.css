@@ -950,3 +950,11 @@ body.hasbar #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .it .rm{display:block;margin-top:4px;padding:2px 0;background:none;border:0;font:600 12px var(--f);color:#6b6d72;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .it .rm:hover{color:var(--k)}
 #areaNote a{color:var(--k);font-weight:700}
+/* v18c: 1 kg pack uses the same Add / − n + control as the cuts */
+.hp .hrow{display:block}
+.hp .hctl{justify-content:flex-start;min-width:0}
+.hp .hctl .btn,.hp .hctl .qty.step{width:100%;max-width:320px;height:52px}
+.hp .hctl .btn{background:var(--k);color:var(--w);border-color:var(--k)}
+.hp .hctl .qty.step{border:2px solid var(--k)!important;background:var(--w);color:var(--k)}
+.hp .hctl .qty.step button{width:56px;height:100%;color:var(--k)}
+@media(max-width:800px){.hp .hctl .btn,.hp .hctl .qty.step{max-width:none}}
