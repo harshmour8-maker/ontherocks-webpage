@@ -26,10 +26,10 @@ const P=[
  {id:'punch',n:'Punch Block',s:'Any Size You Like',p:0,i:'/img/punch.webp'}
 ];
 const HERO={id:'otr1kg',n:'On The Rocks 1 kg',s:'Premium Ice Cubes',p:80};
-let DELIVERY={freeFrom:500,fee:99,discountAbove:1200,discountPct:10},AREA={name:'Guwahati',lat:26.1445,lng:91.7362,km:20};
-/* free from ₹500; below that a flat ₹99. 10% off the ice on orders above ₹1,200 (same rules as the server) */
+let DELIVERY={freeFrom:500,fee:99,discountFrom:1200,discountPct:10},AREA={name:'Guwahati',lat:26.1445,lng:91.7362,km:20};
+/* free from ₹500; below that a flat ₹99. 10% off the ice on orders of ₹1,200 or more (same rules as the server) */
 const fee=sub=>sub>0&&sub<DELIVERY.freeFrom?DELIVERY.fee:0;
-const discountFor=sub=>DELIVERY.discountPct>0&&sub>DELIVERY.discountAbove?Math.round(sub*DELIVERY.discountPct/100):0;
+const discountFor=sub=>DELIVERY.discountPct>0&&sub>=DELIVERY.discountFrom?Math.round(sub*DELIVERY.discountPct/100):0;
 const packsForFree=()=>Math.ceil(DELIVERY.freeFrom/HERO.p);
 let cart={};try{cart=JSON.parse(localStorage.getItem('otrcart')||'{}')}catch(e){}
 /* $ returns a harmless stand-in when a page doesn't have that element, so one script serves every page */
@@ -43,8 +43,8 @@ $('#waL').href=wa('Hi On The Rocks!');
 function save(){try{localStorage.setItem('otrcart',JSON.stringify(cart))}catch(e){}}
 function render(){
   const ids=Object.keys(cart).filter(k=>cart[k]>0&&find(k));let t=0,c=0;
-  $('#items').innerHTML=ids.length?ids.map(k=>{const x=find(k),q=cart[k];t+=x.p*q;c+=q;return `<div class="it"><div><b>${x.n}</b><small>${R(x.p)} ${x.u||'each'}</small>${q>maxQty(k)?`<small class="warn">${maxQty(k)>0?'Only '+maxQty(k)+' left':'Sold out – please remove'}</small>`:''}</div><div class="qty"><button data-c="${k}" data-d="-1" aria-label="Less">−</button><span>${q}</span><button data-c="${k}" data-d="1" aria-label="More">+</button></div></div>`}).join(''):'<p class="empty">Your cart is empty.</p>';
-  const dl=fee(t),ds=discountFor(t),gt=t-ds+dl;$('#sub').textContent=R(t);$('#discRow').hidden=!ds;$('#discL').textContent=`Discount ${DELIVERY.discountPct}%`;$('#disc').textContent='−'+R(ds);$('#dlv').innerHTML=!ids.length?R(0):dl?R(dl):'<span class="free">FREE</span>';$('#tot').textContent=R(gt);const fh=$('#freeHint');fh.hidden=!ids.length;fh.classList.toggle('got',!dl);if(dl){fh.innerHTML=`<span>Add ${R(DELIVERY.freeFrom-t)} more for free delivery</span><button type="button" id="addFree" data-n="1">Add 1 Pack</button>`}else if(ds)fh.textContent=`🎉 Free delivery and ${DELIVERY.discountPct}% off`;else if(DELIVERY.discountPct>0)fh.innerHTML=`<span>✓ Free delivery. Add ${R(DELIVERY.discountAbove+1-t)} more for ${DELIVERY.discountPct}% off</span>`;else fh.textContent='🎉 You get free delivery';$('#cc').textContent=c;syncBar(c,gt);const over=ids.some(k=>cart[k]>maxQty(k));$('#place').disabled=$('#pay').disabled=!ids.length||over;$('#pay').textContent=ids.length?'Pay '+R(gt)+' securely':'Pay online';save();syncCards();
+  $('#items').innerHTML=ids.length?ids.map(k=>{const x=find(k),q=cart[k];t+=x.p*q;c+=q;return `<div class="it"><div><b>${x.n}</b><small>${R(x.p)} ${x.u||'each'}</small><button type="button" class="rm" data-rm="${k}" aria-label="Remove ${x.n} from cart">Remove</button>${q>maxQty(k)?`<small class="warn">${maxQty(k)>0?'Only '+maxQty(k)+' left':'Sold out – please remove'}</small>`:''}</div><div class="qty"><button data-c="${k}" data-d="-1" aria-label="Less">−</button><span>${q}</span><button data-c="${k}" data-d="1" aria-label="More">+</button></div></div>`}).join(''):'<p class="empty">Your cart is empty.</p>';
+  const dl=fee(t),ds=discountFor(t),gt=t-ds+dl;$('#sub').textContent=R(t);$('#discRow').hidden=!ds;$('#discL').textContent=`Discount ${DELIVERY.discountPct}%`;$('#disc').textContent='−'+R(ds);$('#dlv').innerHTML=!ids.length?R(0):dl?R(dl):'<span class="free">FREE</span>';$('#tot').textContent=R(gt);const fh=$('#freeHint');fh.hidden=!ids.length;fh.classList.toggle('got',!dl);if(dl){fh.innerHTML=`<span>Add ${R(DELIVERY.freeFrom-t)} more for free delivery</span><button type="button" id="addFree" data-n="1">Add 1 Pack</button>`}else if(ds)fh.textContent=`🎉 Free delivery and ${DELIVERY.discountPct}% off`;else if(DELIVERY.discountPct>0)fh.innerHTML=`<span>✓ Free delivery. Add ${R(DELIVERY.discountFrom-t)} more for ${DELIVERY.discountPct}% off</span>`;else fh.textContent='🎉 You get free delivery';$('#cc').textContent=c;syncBar(c,gt);const over=ids.some(k=>cart[k]>maxQty(k));$('#place').disabled=$('#pay').disabled=!ids.length||over;$('#pay').textContent=ids.length?'Pay '+R(gt)+' securely':'Pay online';save();syncCards();
 }
 function add(id,q,from){const mx=maxQty(id);if(mx<=0){toast('Sorry, sold out');return}const want=(cart[id]||0)+q;if(want>mx)toast('Only '+mx+' left');cart[id]=Math.min(want,mx);render();if(from)fly(from);const cb=$('#cartBtn');cb.classList.remove('pop');void cb.offsetWidth;cb.classList.add('pop');}
 const open=o=>{document.body.classList.toggle('open',o);if(o)drawSlots();if(o&&lineItems().length&&!PIN&&$('#locPanel').hidden)setTimeout(openMap,350)};
@@ -53,8 +53,9 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('button,a');if(!b)return;
   if(b.dataset.q){hq=Math.max(1,Math.min(hq+ +b.dataset.q,Math.max(1,maxQty(HERO.id))));$('#hq').textContent=hq}
   if(b.id==='qbAdd'){add(HERO.id,1,$('.qbuy img'));toast('1 kg pack added');return}
+  if(b.dataset.rm){delete cart[b.dataset.rm];render();toast('Removed from cart');return}
   if(b.id==='addFree'){add(HERO.id,+b.dataset.n);return}
-  if(b.id==='addHero'){add(HERO.id,hq,$('.hp .pic img'));hq=1;$('#hq').textContent=1;open(true)}
+  if(b.id==='addHero'){const n=hq;add(HERO.id,hq,$('.hp .pic img'));hq=1;$('#hq').textContent=1;toast(n>1?n+' × 1 kg packs added':'1 kg pack added')}
   if(b.dataset.add){add(b.dataset.add,1,(b.closest('.card,.cut')||document).querySelector('.im img,.cpic img'));toast('Added '+find(b.dataset.add).n);const s=document.querySelector(`.ctl[data-ctl="${b.dataset.add}"] button[data-d="1"]`);if(s)s.focus({preventScroll:true})}
   if(b.dataset.c){const k=b.dataset.c,n=Math.max(0,cart[k]+ +b.dataset.d);if(n>maxQty(k))toast('Only '+maxQty(k)+' left');cart[k]=Math.min(n,maxQty(k));render()}
   if(b.id==='cartBtn')open(true);
@@ -220,7 +221,7 @@ const MAP=(function(){
 const DEFAULT_CENTER={lat:26.1445,lng:91.7362}; // Guwahati
 /* Google Maps key comes from Vercel (GOOGLE_MAPS_KEY) via /api/config. No key → free backup map. */
 const CONFIG=fetch(CFG.API+'/api/config').then(r=>r.ok?r.json():{}).catch(()=>({}));
-CONFIG.then(c=>{if(c.delivery)DELIVERY=c.delivery;if(c.area){AREA=c.area;$('#areaNote').textContent=`We currently deliver within ${AREA.name}.`}render()});
+CONFIG.then(c=>{if(c.delivery)DELIVERY=c.delivery;if(c.area){AREA=c.area;$('#areaNote').innerHTML=`We currently deliver within ${AREA.name}. Outside ${AREA.name}? <a href="/?q=panindia#quote" data-panindia>Get a pan-India quote</a>`}render()});
 const kmTo=(a,b)=>{const r=x=>x*Math.PI/180,h=Math.sin(r(b.lat-a.lat)/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(r(b.lng-a.lng)/2)**2;return 12742*Math.asin(Math.sqrt(h))};
 const inArea=p=>kmTo(AREA,p)<=AREA.km;
 const LOC={engine:null};let GM=null;
@@ -578,4 +579,18 @@ render();
   }
   if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){io.disconnect();load()}},{rootMargin:'900px 0px'});
     io.observe(document.getElementById('bulk')||sec)}else load();
+})();
+
+/* v18: pan-India "Get a quote" → bulk form, pre-filled */
+(function(){
+  const f=document.getElementById('enq');
+  function fill(){
+    if(!f)return false;
+    const m=f.elements.message;if(m&&!/pan-india/i.test(m.value))m.value=('Pan-India delivery. Deliver to (city, state): \n'+m.value).trim();
+    document.body.classList.remove('open');
+    const q=document.getElementById('quote')||f;q.scrollIntoView({behavior:'smooth',block:'start'});
+    setTimeout(()=>{const c=f.elements.city;if(c){c.focus({preventScroll:true})}},500);return true;
+  }
+  document.addEventListener('click',e=>{const a=e.target.closest('a[data-panindia]');if(a&&f){e.preventDefault();fill()}});
+  if(/[?&]q=panindia\b/.test(location.search)&&f){setTimeout(fill,300);history.replaceState(null,'',location.pathname+'#quote')}
 })();

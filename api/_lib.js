@@ -44,7 +44,7 @@ function priceCart(items) {
     lines.push(`${qty} x ${prod.n} (${rupees(prod.p * qty)})`);
   }
   // Delivery: free from FREE_DELIVERY_FROM (default ₹500), otherwise a flat DELIVERY_FEE (default ₹99).
-  // Discount: DISCOUNT_PCT (default 10%) off the ice on orders above DISCOUNT_ABOVE (default ₹1,200).
+  // Discount: DISCOUNT_PCT (default 10%) off the ice on orders of DISCOUNT_FROM (default ₹1,200) or more.
   const subtotal = total, d = deliveryRules();
   const delivery = deliveryFee(subtotal, d);
   const discount = discountFor(subtotal, d);
@@ -54,7 +54,7 @@ function priceCart(items) {
 }
 
 // Change in Vercel without touching code: FREE_DELIVERY_FROM (default 500), DELIVERY_FEE (default 99),
-// DISCOUNT_ABOVE (default 1200), DISCOUNT_PCT (default 10, set 0 to switch the discount off).
+// DISCOUNT_FROM (default 1200), DISCOUNT_PCT (default 10, set 0 to switch the discount off).
 // ---------------------------------------------------------------------------
 // Delivery slots (India time). 1-hour slots from DELIVERY_START_HOUR (10 = 10 am) to DELIVERY_END_HOUR
 // (22 = last slot 9–10 pm). The earliest slot must start at least SLOT_LEAD_MINUTES (60) from now,
@@ -92,11 +92,11 @@ function deliveryFee(subtotal, d = deliveryRules()) {
 function deliveryRules() {
   const n = (k, d) => { const v = Number(env(k)); return env(k) !== '' && Number.isFinite(v) && v >= 0 ? v : d; };
   return { freeFrom: n('FREE_DELIVERY_FROM', 500), fee: n('DELIVERY_FEE', 99),
-    discountAbove: n('DISCOUNT_ABOVE', 1200), discountPct: Math.min(n('DISCOUNT_PCT', 10), 90) };
+    discountFrom: n('DISCOUNT_FROM', 1200), discountPct: Math.min(n('DISCOUNT_PCT', 10), 90) };
 }
-// Flat % off the ice on orders strictly above discountAbove, rounded to the rupee.
+// Flat % off the ice on orders of discountFrom or more, rounded to the rupee.
 function discountFor(subtotal, d = deliveryRules()) {
-  if (!(d.discountPct > 0) || !(subtotal > d.discountAbove)) return 0;
+  if (!(d.discountPct > 0) || !(subtotal >= d.discountFrom)) return 0;
   return Math.round(subtotal * d.discountPct / 100);
 }
 
@@ -118,7 +118,7 @@ function checkCustomer(c) {
   }
   // The delivery spot must be pinned on the map, inside the delivery area. Always required.
   const area = deliveryArea();
-  const outside = `Sorry, we currently deliver only within ${area.name}. Please choose an address in ${area.name}, or WhatsApp us for other places.`;
+  const outside = `Sorry, we currently deliver only within ${area.name}. Please choose an address in ${area.name}. For delivery outside ${area.name}, ask for a pan-India quote on our home page.`;
   if (out.lat === undefined) throw new HttpError(400, 'Please select your delivery address on the map.');
   if (distanceKm(out.lat, out.lng, area.lat, area.lng) > area.km) throw new HttpError(400, outside);
   if (!out.address) throw new HttpError(400, 'Add your flat / house number and a landmark.');

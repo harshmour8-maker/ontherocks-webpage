@@ -62,6 +62,11 @@ td select.New{font-weight:700}
 .cancelled td{color:#999}.cancelled td b{text-decoration:line-through}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--k);color:var(--w);padding:10px 16px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.on{opacity:1}
+.alerts{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:2px solid var(--k);background:var(--w);padding:12px 14px;margin:0 0 14px;font-weight:600}
+.alerts.on{border-color:#0a7d32}.alerts.on #alTxt::before{content:'● ';color:#0a7d32}
+#newBanner{position:fixed;top:12px;left:50%;transform:translate(-50%,-140%);transition:transform .3s;z-index:50;background:#0a7d32;color:#fff;padding:14px 18px;font-weight:800;max-width:calc(100% - 24px);box-shadow:0 10px 30px rgba(0,0,0,.25);cursor:pointer}
+#newBanner.on{transform:translate(-50%,0)}
+tr.fresh td{background:#eaf6ee}
 @media(max-width:760px){
   main{padding:12px}
   .bar .acts{grid-column:1/-1}
@@ -103,6 +108,10 @@ td select.New{font-weight:700}
       <label>Search<input id="q" type="search" placeholder="Name, phone, invoice no…"></label>
       <div class="acts"><button class="btn o" id="refresh" type="button">Refresh</button><button class="btn" id="csv" type="button">Download Excel (CSV)</button></div>
     </div>
+    <div class="alerts" id="alerts">
+      <span id="alTxt">New-order alerts are off on this device.</span>
+      <button class="btn o" id="alOn" type="button">Turn on new-order alerts</button>
+    </div>
     <div class="sum" id="sum"></div>
     <p class="note">Totals count <b>paid online</b> orders in this period that are not Cancelled. Use them for your GST return (taxable value, CGST, SGST).</p>
     <p class="msg" id="amsg"></p>
@@ -110,6 +119,7 @@ td select.New{font-weight:700}
   </section>
 </main>
 <div id="toast"></div>
+<div id="newBanner" role="alert"></div>
 <script>
 const $=s=>document.querySelector(s);
 const IST=5.5*3600e3;
@@ -158,7 +168,7 @@ function draw(){
     <div><span>Taxable value</span><b>${inr(s('taxable'))}</b></div><div><span>CGST</span><b>${inr(s('cgst'))}</b></div><div><span>SGST</span><b>${inr(s('sgst'))}</b></div>
     <div><span>Delivery charges</span><b>${inr(s('delivery'))}</b></div><div><span>WhatsApp orders</span><b>${wa.length}</b></div>`;
   $('#rows').innerHTML=list.length?list.map(o=>{const f=o.fulfilment||'New';const tel=String(o.phone||'').replace(/[^\d+]/g,'');const wa=tel.replace(/^\+/,'').replace(/^(\d{10})$/,'91$1');
-    return `<tr class="${f==='Cancelled'?'cancelled':''}">
+    return `<tr class="${f==='Cancelled'?'cancelled':''}${typeof AL!=='undefined'&&AL.fresh&&AL.fresh.has(o.ref)?' fresh':''}">
     <td data-l="Date"><div>${esc(fmt(o.date))}</div></td>
     <td data-l="Invoice / order"><div><b>${esc(o.invoiceNo||'—')}</b><small>${esc(o.ref)}</small></div></td>
     <td data-l="Customer"><div><b>${esc(o.name)}</b><small><a href="tel:${esc(tel)}">${esc(o.phone)}</a></small><small>${esc(o.email&&o.email!=='-'?o.email:'')}</small></div></td>
@@ -187,12 +197,12 @@ function csv(){
   const t=istDate(Date.now());a.download=`OnTheRocks-orders-${t.y}-${String(t.m+1).padStart(2,'0')}-${String(t.d).padStart(2,'0')}.csv`;
   document.body.appendChild(a);a.click();a.remove();
 }
-function logout(m){KEY='';try{sessionStorage.removeItem('otrAdmin');localStorage.removeItem('otrAdmin')}catch(e){}$('#app').hidden=true;$('#out').hidden=true;$('#login').hidden=false;$('#lmsg').textContent=m||''}
-function enter(){$('#login').hidden=true;$('#app').hidden=false;$('#out').hidden=false;load()}
+function logout(m){KEY='';try{sessionStorage.removeItem('otrAdmin');localStorage.removeItem('otrAdmin')}catch(e){}$('#app').hidden=true;$('#out').hidden=true;$('#login').hidden=false;$('#lmsg').textContent=m||'';if(typeof stopPoll==='function')stopPoll()}
+function enter(){$('#login').hidden=true;$('#app').hidden=false;$('#out').hidden=false;load();startPoll()}
 $('#login').onsubmit=async e=>{
   e.preventDefault();KEY=$('#pw').value;$('#go').disabled=true;$('#lmsg').textContent='';
   try{const [from,to]=range();const j=await call({action:'list',from,to});try{if($('#rem').checked){localStorage.setItem('otrAdmin',KEY);sessionStorage.removeItem('otrAdmin')}else{sessionStorage.setItem('otrAdmin',KEY);localStorage.removeItem('otrAdmin')}}catch(e){}
-    ALL=j.orders||[];if(j.fulfilmentOptions)OPTS=j.fulfilmentOptions;$('#login').hidden=true;$('#app').hidden=false;$('#out').hidden=false;fillFul();draw()}
+    ALL=j.orders||[];if(j.fulfilmentOptions)OPTS=j.fulfilmentOptions;$('#login').hidden=true;$('#app').hidden=false;$('#out').hidden=false;fillFul();draw();startPoll()}
   catch(err){if(err.message!=='Wrong password.')$('#lmsg').textContent=err.message;else $('#lmsg').textContent='Wrong password.'}
   finally{$('#go').disabled=false}
 };
@@ -201,6 +211,52 @@ $('#period').onchange=()=>{$('#custom').hidden=$('#period').value!=='custom';if(
 $('#from').onchange=$('#to').onchange=()=>load();
 ['#pay','#ful'].forEach(s=>$(s).onchange=draw);$('#q').oninput=draw;
 $('#refresh').onclick=load;$('#csv').onclick=csv;
+
+/* ---- New-order alerts: checks for new orders every 30 seconds while this page is open ---- */
+const AL={timer:0,seen:null,count:0,title:document.title,ctx:null,sw:null};
+const alertsOn=()=>{try{return localStorage.getItem('otrAlerts')==='1'}catch(e){return false}};
+function alUi(){const on=alertsOn(),perm=('Notification' in window)?Notification.permission:'unsupported';
+  $('#alerts').classList.toggle('on',on);
+  $('#alTxt').textContent=on?(perm==='granted'?'New-order alerts are on: sound + phone/computer notification while this page is open.':'New-order alerts are on: sound + banner while this page is open.'):'New-order alerts are off on this device.';
+  $('#alOn').textContent=on?'Turn off':'Turn on new-order alerts'}
+function chime(){try{AL.ctx=AL.ctx||new (window.AudioContext||window.webkitAudioContext)();const c=AL.ctx;c.resume&&c.resume();
+  [[880,0],[1320,.18],[1760,.36]].forEach(([f,t])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;o.connect(g);g.connect(c.destination);
+  const s=c.currentTime+t;g.gain.setValueAtTime(0.0001,s);g.gain.exponentialRampToValueAtTime(0.35,s+.02);g.gain.exponentialRampToValueAtTime(0.0001,s+.35);o.start(s);o.stop(s+.4)})}catch(e){}}
+async function sysNote(title,body){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  try{if(AL.sw){await AL.sw.showNotification(title,{body,icon:'/icon-192.png',badge:'/icon-192.png',tag:'otr-'+Date.now(),requireInteraction:true});return}}catch(e){}
+  try{const n=new Notification(title,{body,icon:'/icon-192.png'});n.onclick=()=>{window.focus();n.close()}}catch(e){}}
+function banner(t){const b=$('#newBanner');b.textContent=t;b.classList.add('on');clearTimeout(banner.t);banner.t=setTimeout(()=>b.classList.remove('on'),12000)}
+$('#newBanner').onclick=()=>{$('#newBanner').classList.remove('on');window.scrollTo({top:0,behavior:'smooth'})};
+async function poll(){
+  if(!KEY)return;
+  try{const now=Date.now();const j=await call({action:'list',from:now-3*86400e3,to:now});const list=j.orders||[];
+    const refs=list.map(o=>o.ref);
+    if(AL.seen===null){AL.seen=new Set(refs);return}           // first check: remember what's already there
+    const fresh=list.filter(o=>!AL.seen.has(o.ref));refs.forEach(r=>AL.seen.add(r));
+    if(!fresh.length)return;
+    AL.count+=fresh.length;document.title=`(${AL.count}) New order${AL.count>1?'s':''} – ${AL.title}`;
+    const o=fresh[0],txt=fresh.length>1?`${fresh.length} new orders`:`New order: ${o.name||'Customer'} – ${inr(o.total)}`;
+    banner('🔔 '+txt+(o.slot?' · '+o.slot:''));
+    if(alertsOn()){chime();sysNote('On The Rocks – '+(fresh.length>1?fresh.length+' new orders':'new order'),fresh.map(x=>`${x.name||'Customer'} · ${inr(x.total)}${x.slot?' · '+x.slot:''}`).join('\n'))}
+    AL.fresh=new Set(fresh.map(x=>x.ref));await load();
+  }catch(e){}
+}
+function startPoll(){clearInterval(AL.timer);AL.seen=null;poll();AL.timer=setInterval(poll,30000)}
+function stopPoll(){clearInterval(AL.timer);AL.timer=0;AL.seen=null}
+$('#alOn').onclick=async()=>{
+  if(alertsOn()){try{localStorage.removeItem('otrAlerts')}catch(e){}alUi();return}
+  try{localStorage.setItem('otrAlerts','1')}catch(e){}
+  chime();                                                       // also unlocks sound on phones
+  if('serviceWorker' in navigator){try{AL.sw=await navigator.serviceWorker.register('/admin-sw.js',{scope:'/admin'})}catch(e){}}
+  if('Notification' in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch(e){}}
+  if('Notification' in window&&Notification.permission==='denied')toast('Notifications are blocked in browser settings – you will still hear a sound');
+  else toast('Alerts on');
+  alUi()};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){AL.count=0;document.title=AL.title}});
+document.addEventListener('pointerdown',()=>{if(alertsOn()&&AL.ctx&&AL.ctx.state==='suspended')AL.ctx.resume()},{passive:true});
+if('serviceWorker' in navigator&&alertsOn())navigator.serviceWorker.register('/admin-sw.js',{scope:'/admin'}).then(r=>AL.sw=r).catch(()=>{});
+alUi();
 if(KEY)enter();
 </script>
 </body>

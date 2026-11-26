@@ -925,3 +925,28 @@ body.hasbar #toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .shop .head .offer{margin-top:14px;display:inline-block;padding:9px 14px;border:2px solid var(--k);color:var(--k);font-weight:600;line-height:1.4}
 .shop .head .offer b{font-weight:900}
 .sumrow.disc span:last-child{color:#0a7d32;font-weight:800}
+
+/* v18b: Why On The Rocks (below Why clear ice) */
+.whyotr{background:var(--w)}
+.whyotr .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(32px,6vw,96px);align-items:center}
+.whyotr h2{font-size:clamp(34px,4.6vw,64px);line-height:.95;margin:0;white-space:normal}
+.whyotr .lede{color:var(--muted);max-width:44ch}
+.whyotr .pts{list-style:none;margin:28px 0 32px;padding:0}
+.whyotr .pts li{padding:16px 0;border-top:1px solid rgba(30,31,34,.14);color:var(--muted);font-size:16px;line-height:1.6}
+.whyotr .pts li:last-child{border-bottom:1px solid rgba(30,31,34,.14)}
+.whyotr .pts b{color:var(--k);font-weight:800;display:block;font-size:17px;margin-bottom:2px}
+.wo-pics{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,18px);align-items:start}
+.wo-pics figure{margin:0}
+.wo-pics img{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;display:block}
+.wo-pics figure:last-child{margin-top:clamp(32px,6vw,72px)}
+.pillars{border-top:1px solid rgba(30,31,34,.12)}
+.pgrid article.panindia .btn{margin-top:16px}
+@media(max-width:800px){
+  .whyotr .wrap{grid-template-columns:1fr}
+  .wo-pics{order:-1}
+  .wo-pics figure:last-child{margin-top:28px}
+}
+/* cart: remove line */
+.it .rm{display:block;margin-top:4px;padding:2px 0;background:none;border:0;font:600 12px var(--f);color:#6b6d72;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.it .rm:hover{color:var(--k)}
+#areaNote a{color:var(--k);font-weight:700}
